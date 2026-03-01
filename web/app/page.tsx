@@ -1,52 +1,233 @@
 "use client";
 
-import { useState, useRef, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback } from "react";
+import QuizStep, { QuizStepData } from "./components/QuizStep";
+import ProfileCard from "./components/ProfileCard";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001";
 
-// ── Pre-built test questions ──
+// ── Quiz Data ──
 
-const TEST_QUESTIONS = [
+const QUIZ_STEPS: QuizStepData[] = [
   {
-    category: "Overview",
-    questions: [
-      "What are the main topics discussed across my emails?",
-      "Summarize the most important conversations in my inbox",
-      "What types of emails are in this collection?",
+    id: "coffee",
+    title: "What's your coffee vibe?",
+    subtitle: "How you start your morning says everything about you.",
+    options: [
+      {
+        id: "Specialty pour-over",
+        label: "Third Wave Temple",
+        emoji: "☕",
+        description:
+          "Single-origin pour-overs, light roasts, and baristas who geek out about extraction",
+      },
+      {
+        id: "Cozy café regular",
+        label: "Cozy Corner Regular",
+        emoji: "🛋️",
+        description:
+          "Warm atmosphere, great lattes, a book and a pastry — the perfect morning",
+      },
+      {
+        id: "Quick espresso standing up",
+        label: "Quick Espresso",
+        emoji: "⚡",
+        description:
+          "Knock back an espresso at the counter like a local — no fuss, all fuel",
+      },
+      {
+        id: "Laptop café worker",
+        label: "Digital Nomad HQ",
+        emoji: "💻",
+        description:
+          "Reliable wifi, power outlets, great coffee, and nobody rushing you out",
+      },
     ],
   },
   {
-    category: "Search",
-    questions: [
-      "Are there any action items or tasks I need to follow up on?",
-      "What meetings or events have been scheduled?",
-      "Show me emails related to contracts or agreements",
+    id: "food",
+    title: "How do you eat?",
+    subtitle: "Your food style reveals your true travel personality.",
+    options: [
+      {
+        id: "Street food and markets",
+        label: "Street Food Hunter",
+        emoji: "🌮",
+        description:
+          "Hole-in-the-wall spots, food markets, and eating standing up at a counter",
+      },
+      {
+        id: "Fine dining and tasting menus",
+        label: "Fine Dining Explorer",
+        emoji: "🍷",
+        description:
+          "Tasting menus, wine pairings, and chefs who tell stories through food",
+      },
+      {
+        id: "Local traditional cuisine",
+        label: "Tradition Keeper",
+        emoji: "🥘",
+        description:
+          "The dish grandma makes, the 100-year-old restaurant, the recipe that hasn't changed",
+      },
+      {
+        id: "Vegetarian and health-conscious",
+        label: "Plant-Forward",
+        emoji: "🥬",
+        description:
+          "Organic markets, creative vegetarian cuisine, smoothie bowls, and acai",
+      },
     ],
   },
   {
-    category: "People & Context",
-    questions: [
-      "Who are the most frequent senders?",
-      "What is the date range of these emails?",
-      "What companies or organizations appear most often?",
+    id: "activity",
+    title: "What gets you moving?",
+    subtitle: "How you spend your days shapes your ideal itinerary.",
+    options: [
+      {
+        id: "Walking tours and street art",
+        label: "Urban Explorer",
+        emoji: "🚶",
+        description:
+          "Get lost in neighborhoods, discover street art, stumble into hidden gems",
+      },
+      {
+        id: "Museums and galleries",
+        label: "Culture Vulture",
+        emoji: "🎨",
+        description:
+          "World-class museums, local galleries, architecture walks, and bookshops",
+      },
+      {
+        id: "Outdoor sports and fitness",
+        label: "Active Adventurer",
+        emoji: "🏄",
+        description:
+          "Running routes, surf spots, hiking trails, gym drop-ins, and yoga classes",
+      },
+      {
+        id: "Shopping and relaxing",
+        label: "Leisure & Style",
+        emoji: "🛍️",
+        description:
+          "Boutique shopping, spa days, scenic parks, and leisurely brunches",
+      },
+    ],
+  },
+  {
+    id: "nightlife",
+    title: "When the sun goes down...",
+    subtitle: "Your nightlife style is the ultimate travel personality test.",
+    options: [
+      {
+        id: "Cocktail bars and speakeasies",
+        label: "Speakeasy Seeker",
+        emoji: "🍸",
+        description:
+          "Hidden doors, craft cocktails, moody lighting, and bartenders who are artists",
+      },
+      {
+        id: "Live music and dancing",
+        label: "Live & Loud",
+        emoji: "🎵",
+        description:
+          "Jazz clubs, local bands, late-night dancing, and feeling the bass in your chest",
+      },
+      {
+        id: "Wine bars and dinner",
+        label: "Wine & Dine",
+        emoji: "🍷",
+        description:
+          "Natural wine bars, long dinners, local vintages, and great conversation",
+      },
+      {
+        id: "Early to bed, early to rise",
+        label: "Sunrise > Sunset",
+        emoji: "🌅",
+        description:
+          "A quiet drink then early to bed — you'll catch the sunrise while everyone's sleeping",
+      },
+    ],
+  },
+  {
+    id: "neighborhood",
+    title: "Your ideal neighborhood?",
+    subtitle: "Where you stay defines your whole trip experience.",
+    options: [
+      {
+        id: "Artsy and bohemian",
+        label: "Artsy & Bohemian",
+        emoji: "🎭",
+        description:
+          "Street art, independent shops, creative energy, and locals who express themselves",
+      },
+      {
+        id: "Historic and charming",
+        label: "Old Soul",
+        emoji: "🏛️",
+        description:
+          "Cobblestone streets, centuries-old buildings, history around every corner",
+      },
+      {
+        id: "Trendy and upscale",
+        label: "Trendy & Polished",
+        emoji: "✨",
+        description:
+          "The hottest restaurants, design boutiques, and the neighborhood everyone's talking about",
+      },
+      {
+        id: "Local and residential",
+        label: "Deep Local",
+        emoji: "🏘️",
+        description:
+          "Where tourists don't go, real neighborhood life, corner bars, and morning markets",
+      },
+    ],
+  },
+  {
+    id: "budget",
+    title: "What's your budget vibe?",
+    subtitle: "No judgment — every budget has its own adventure style.",
+    options: [
+      {
+        id: "Backpacker budget",
+        label: "Budget Explorer",
+        emoji: "🎒",
+        description:
+          "Street food, free activities, happy hours, and making every dollar count",
+      },
+      {
+        id: "Mid-range comfort",
+        label: "Smart Spender",
+        emoji: "💳",
+        description:
+          "Great restaurants, comfortable stays, occasional splurge on something special",
+      },
+      {
+        id: "Treat yourself",
+        label: "Treat Yourself",
+        emoji: "💎",
+        description:
+          "Life's too short for bad wine. Nice hotels, great meals, premium experiences",
+      },
+      {
+        id: "No budget, full experience",
+        label: "Money Is No Object",
+        emoji: "🥂",
+        description:
+          "Michelin stars, private tours, the best of everything — you're here to experience it all",
+      },
     ],
   },
 ];
 
 // ── Types ──
 
-interface Source {
-  score: number;
-  text: string;
-  subject: string;
-  from: string;
-  date: string;
-}
-
-interface QueryResult {
-  question: string;
-  answer: string;
-  sources: Source[];
+interface City {
+  slug: string;
+  name: string;
+  chunk_count: number;
+  categories: string[];
 }
 
 interface IngestStatus {
@@ -57,7 +238,16 @@ interface IngestStatus {
   error: string | null;
 }
 
-// ── Components ──
+type AppState = "landing" | "quiz" | "profile" | "city-select" | "loading-guide";
+
+// ── City Emojis ──
+const CITY_EMOJI: Record<string, string> = {
+  "buenos-aires": "🇦🇷",
+  barcelona: "🇪🇸",
+  lisbon: "🇵🇹",
+};
+
+// ── Loading Component ──
 
 function LoadingDots() {
   return (
@@ -69,51 +259,7 @@ function LoadingDots() {
   );
 }
 
-function SourceCard({ source, index }: { source: Source; index: number }) {
-  const [expanded, setExpanded] = useState(false);
-  const dateStr = source.date
-    ? new Date(source.date).toLocaleDateString("en-US", {
-        year: "numeric",
-        month: "short",
-        day: "numeric",
-      })
-    : "Unknown date";
-
-  return (
-    <div className="rounded-lg border border-border bg-card p-3">
-      <button
-        onClick={() => setExpanded(!expanded)}
-        className="flex w-full items-start justify-between gap-2 text-left"
-      >
-        <div className="min-w-0 flex-1">
-          <div className="flex items-center gap-2">
-            <span className="shrink-0 rounded bg-accent/20 px-1.5 py-0.5 font-mono text-xs text-accent">
-              #{index + 1}
-            </span>
-            <span className="truncate text-sm font-medium">
-              {source.subject}
-            </span>
-          </div>
-          <div className="mt-1 flex gap-3 text-xs text-muted">
-            <span>{source.from}</span>
-            <span>{dateStr}</span>
-            <span className="text-accent">
-              {(source.score * 100).toFixed(1)}% match
-            </span>
-          </div>
-        </div>
-        <span className="mt-0.5 shrink-0 text-muted transition-transform duration-200">
-          {expanded ? "▲" : "▼"}
-        </span>
-      </button>
-      {expanded && (
-        <p className="mt-2 whitespace-pre-wrap border-t border-border pt-2 text-sm leading-relaxed text-muted">
-          {source.text}
-        </p>
-      )}
-    </div>
-  );
-}
+// ── Ingest Panel ──
 
 function IngestPanel({
   status,
@@ -128,16 +274,18 @@ function IngestPanel({
       : 0;
 
   const phaseLabel: Record<string, string> = {
-    idle: "Not started",
-    parsing: "Parsing mbox emails...",
-    embedding: `Embedding & uploading to Pinecone (${pct}%)`,
-    done: `Complete — ${status.total} chunks indexed`,
+    idle: "Not indexed yet",
+    loading: "Loading city data...",
+    indexing: "Creating Pinecone index...",
+    embedding: `Embedding & indexing (${pct}%)`,
+    done: `✓ ${status.total} chunks indexed`,
     error: `Error: ${status.error}`,
   };
 
   const phaseColor: Record<string, string> = {
     idle: "text-muted",
-    parsing: "text-warning",
+    loading: "text-warning",
+    indexing: "text-warning",
     embedding: "text-accent",
     done: "text-success",
     error: "text-error",
@@ -146,7 +294,7 @@ function IngestPanel({
   return (
     <div className="rounded-xl border border-border bg-card p-4">
       <div className="mb-3 flex items-center justify-between">
-        <h3 className="text-sm font-semibold tracking-wide uppercase text-muted">
+        <h3 className="text-sm font-semibold uppercase tracking-wide text-muted">
           Data Pipeline
         </h3>
         <button
@@ -154,18 +302,16 @@ function IngestPanel({
           disabled={status.running}
           className="rounded-lg bg-accent px-3 py-1.5 text-xs font-medium text-white transition-colors hover:bg-accent-hover disabled:cursor-not-allowed disabled:opacity-50"
         >
-          {status.running ? "Running..." : "Run Ingestion"}
+          {status.running ? "Running..." : "Index Data"}
         </button>
       </div>
-
       <p className={`text-sm ${phaseColor[status.phase] || "text-muted"}`}>
         {phaseLabel[status.phase] || status.phase}
       </p>
-
       {status.running && status.phase === "embedding" && (
         <div className="mt-2 h-1.5 overflow-hidden rounded-full bg-border">
           <div
-            className="h-full rounded-full bg-accent transition-all duration-500"
+            className="progress-active h-full rounded-full bg-accent transition-all duration-500"
             style={{ width: `${pct}%` }}
           />
         </div>
@@ -177,9 +323,13 @@ function IngestPanel({
 // ── Main Page ──
 
 export default function Home() {
-  const [question, setQuestion] = useState("");
-  const [loading, setLoading] = useState(false);
-  const [results, setResults] = useState<QueryResult[]>([]);
+  const [appState, setAppState] = useState<AppState>("landing");
+  const [quizStep, setQuizStep] = useState(0);
+  const [answers, setAnswers] = useState<Record<string, string>>({});
+  const [profile, setProfile] = useState("");
+  const [profileLoading, setProfileLoading] = useState(false);
+  const [cities, setCities] = useState<City[]>([]);
+  const [selectedCity, setSelectedCity] = useState<string | null>(null);
   const [ingestStatus, setIngestStatus] = useState<IngestStatus>({
     running: false,
     phase: "idle",
@@ -188,27 +338,13 @@ export default function Home() {
     error: null,
   });
 
-  const answerEndRef = useRef<HTMLDivElement>(null);
-  const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
-
-  const pollIngestion = useCallback(() => {
-    if (pollRef.current) clearInterval(pollRef.current);
-    pollRef.current = setInterval(async () => {
-      try {
-        const res = await fetch(`${API_URL}/api/ingest/status`);
-        const data: IngestStatus = await res.json();
-        setIngestStatus(data);
-        if (!data.running) {
-          clearInterval(pollRef.current!);
-          pollRef.current = null;
-        }
-      } catch {
-        /* server may be down */
-      }
-    }, 2000);
-  }, []);
-
+  // Fetch cities and ingest status on mount
   useEffect(() => {
+    fetch(`${API_URL}/api/cities`)
+      .then((r) => r.json())
+      .then((data) => setCities(data.cities || []))
+      .catch(() => {});
+
     fetch(`${API_URL}/api/ingest/status`)
       .then((r) => r.json())
       .then((data: IngestStatus) => {
@@ -216,10 +352,21 @@ export default function Home() {
         if (data.running) pollIngestion();
       })
       .catch(() => {});
-    return () => {
-      if (pollRef.current) clearInterval(pollRef.current);
-    };
-  }, [pollIngestion]);
+  }, []);
+
+  const pollIngestion = useCallback(() => {
+    const interval = setInterval(async () => {
+      try {
+        const res = await fetch(`${API_URL}/api/ingest/status`);
+        const data: IngestStatus = await res.json();
+        setIngestStatus(data);
+        if (!data.running) clearInterval(interval);
+      } catch {
+        /* server may be down */
+      }
+    }, 2000);
+    return () => clearInterval(interval);
+  }, []);
 
   const startIngestion = async () => {
     try {
@@ -228,8 +375,6 @@ export default function Home() {
       if (res.ok) {
         setIngestStatus(data.state);
         pollIngestion();
-      } else {
-        setIngestStatus((prev) => ({ ...prev, phase: "error", error: data.error }));
       }
     } catch (err) {
       setIngestStatus((prev) => ({
@@ -240,215 +385,208 @@ export default function Home() {
     }
   };
 
-  const askQuestion = async (q: string) => {
-    if (!q.trim() || loading) return;
+  const handleQuizSelect = async (optionId: string) => {
+    const currentStep = QUIZ_STEPS[quizStep];
+    const newAnswers = { ...answers, [currentStep.id]: optionId };
+    setAnswers(newAnswers);
 
-    setLoading(true);
-    const currentQuestion = q.trim();
-    setQuestion("");
-
-    try {
-      const res = await fetch(`${API_URL}/api/query`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ question: currentQuestion, top_k: 5 }),
-      });
-
-      if (!res.ok) {
-        const err = await res.json();
-        throw new Error(err.error || err.detail || "Query failed");
+    // Auto-advance after brief delay
+    setTimeout(async () => {
+      if (quizStep < QUIZ_STEPS.length - 1) {
+        setQuizStep(quizStep + 1);
+      } else {
+        // Quiz complete — generate profile
+        setAppState("profile");
+        setProfileLoading(true);
+        try {
+          const res = await fetch(`${API_URL}/api/profile`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ quiz_answers: newAnswers }),
+          });
+          const data = await res.json();
+          setProfile(data.profile);
+        } catch (err) {
+          setProfile(
+            "A curious traveler who loves discovering local gems and authentic experiences."
+          );
+        } finally {
+          setProfileLoading(false);
+        }
       }
-
-      const data = await res.json();
-      setResults((prev) => [
-        {
-          question: currentQuestion,
-          answer: data.answer,
-          sources: data.sources,
-        },
-        ...prev,
-      ]);
-    } catch (err) {
-      setResults((prev) => [
-        {
-          question: currentQuestion,
-          answer: `Error: ${err instanceof Error ? err.message : "Something went wrong"}`,
-          sources: [],
-        },
-        ...prev,
-      ]);
-    } finally {
-      setLoading(false);
-    }
+    }, 300);
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    askQuestion(question);
+  const handleCitySelect = (citySlug: string) => {
+    setSelectedCity(citySlug);
+    // Navigate to guide page with state
+    const params = new URLSearchParams({
+      city: citySlug,
+      profile: profile,
+    });
+    window.location.href = `/guide?${params.toString()}`;
   };
 
-  useEffect(() => {
-    answerEndRef.current?.scrollIntoView({ behavior: "smooth" });
-  }, [results]);
-
-  return (
-    <div className="flex min-h-screen flex-col lg:flex-row">
-      {/* ── Sidebar ── */}
-      <aside className="w-full shrink-0 border-b border-border bg-card/50 p-4 lg:w-80 lg:border-b-0 lg:border-r lg:p-6">
-        <div className="mb-6">
-          <h1 className="text-xl font-bold tracking-tight">
-            <span className="text-accent">Email</span> RAG
+  // ── Landing Page ──
+  if (appState === "landing") {
+    return (
+      <div className="flex min-h-screen flex-col items-center justify-center px-4">
+        <div className="mb-12 text-center">
+          <div className="mb-6 text-7xl">🧭</div>
+          <h1 className="mb-4 text-5xl font-bold tracking-tight md:text-6xl">
+            City<span className="gradient-text">Scout</span>
           </h1>
-          <p className="mt-1 text-sm text-muted">
-            Semantic search & analysis over your emails
+          <p className="mx-auto max-w-lg text-lg text-muted">
+            Discover any city through your unique lens. Answer a few questions,
+            get a personalized guide powered by local knowledge.
           </p>
         </div>
 
-        <IngestPanel status={ingestStatus} onIngest={startIngestion} />
+        <button
+          onClick={() => setAppState("quiz")}
+          className="mb-8 rounded-2xl bg-accent px-8 py-4 text-lg font-semibold text-white transition-all hover:scale-105 hover:bg-accent-hover"
+        >
+          Start Your Taste Quiz →
+        </button>
 
-        <div className="mt-6">
-          <h2 className="mb-3 text-sm font-semibold tracking-wide uppercase text-muted">
-            Test Suite
-          </h2>
-          <div className="space-y-4">
-            {TEST_QUESTIONS.map((group) => (
-              <div key={group.category}>
-                <p className="mb-1.5 text-xs font-medium text-accent/70">
-                  {group.category}
-                </p>
-                <div className="space-y-1.5">
-                  {group.questions.map((q) => (
-                    <button
-                      key={q}
-                      onClick={() => askQuestion(q)}
-                      disabled={loading}
-                      className="w-full rounded-lg border border-border bg-card px-3 py-2 text-left text-sm text-foreground transition-colors hover:border-accent/50 hover:bg-card-hover disabled:opacity-50"
+        <div className="mt-4 flex flex-col items-center gap-3 text-sm text-muted">
+          <span>⏱️ Takes about 60 seconds</span>
+          <div className="flex items-center gap-2">
+            <span className="h-2 w-2 rounded-full bg-accent/50" />
+            <span>Powered by RAG + Pinecone + OpenAI</span>
+          </div>
+        </div>
+
+        {/* Admin: Ingest Panel */}
+        <div className="mt-12 w-full max-w-md">
+          <IngestPanel status={ingestStatus} onIngest={startIngestion} />
+        </div>
+      </div>
+    );
+  }
+
+  // ── Quiz ──
+  if (appState === "quiz") {
+    return (
+      <div className="flex min-h-screen flex-col justify-center py-12">
+        <QuizStep
+          step={QUIZ_STEPS[quizStep]}
+          selected={answers[QUIZ_STEPS[quizStep].id] || null}
+          onSelect={handleQuizSelect}
+          stepIndex={quizStep}
+          totalSteps={QUIZ_STEPS.length}
+        />
+        {quizStep > 0 && (
+          <button
+            onClick={() => setQuizStep(quizStep - 1)}
+            className="mx-auto mt-6 text-sm text-muted hover:text-foreground"
+          >
+            ← Back
+          </button>
+        )}
+      </div>
+    );
+  }
+
+  // ── Profile ──
+  if (appState === "profile") {
+    return (
+      <div className="flex min-h-screen flex-col justify-center py-12">
+        {profileLoading ? (
+          <div className="text-center">
+            <div className="mb-4 text-5xl">🔮</div>
+            <p className="text-lg text-muted">
+              Analyzing your travel DNA <LoadingDots />
+            </p>
+          </div>
+        ) : (
+          <>
+            <ProfileCard profile={profile} quizAnswers={answers} />
+
+            <div className="mx-auto mt-8 text-center">
+              <p className="mb-4 text-muted">Does this look right?</p>
+              <div className="flex gap-3 justify-center">
+                <button
+                  onClick={() => setAppState("city-select")}
+                  className="rounded-xl bg-accent px-6 py-3 font-semibold text-white transition-all hover:scale-105 hover:bg-accent-hover"
+                >
+                  That&apos;s me! Pick a city →
+                </button>
+                <button
+                  onClick={() => {
+                    setQuizStep(0);
+                    setAnswers({});
+                    setAppState("quiz");
+                  }}
+                  className="rounded-xl border border-border px-6 py-3 text-muted transition-colors hover:border-accent hover:text-foreground"
+                >
+                  Retake Quiz
+                </button>
+              </div>
+            </div>
+          </>
+        )}
+      </div>
+    );
+  }
+
+  // ── City Selection ──
+  if (appState === "city-select") {
+    return (
+      <div className="flex min-h-screen flex-col justify-center py-12">
+        <div className="fade-in mx-auto max-w-2xl px-4">
+          <div className="mb-8 text-center">
+            <h2 className="mb-2 text-3xl font-bold">
+              Where are you <span className="gradient-text">headed</span>?
+            </h2>
+            <p className="text-muted">
+              Pick a city and we&apos;ll create your personalized guide
+            </p>
+          </div>
+
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
+            {cities.map((city) => (
+              <button
+                key={city.slug}
+                onClick={() => handleCitySelect(city.slug)}
+                disabled={ingestStatus.phase !== "done"}
+                className="quiz-option group rounded-xl border border-border p-6 text-center disabled:cursor-not-allowed disabled:opacity-50"
+              >
+                <div className="mb-3 text-5xl">
+                  {CITY_EMOJI[city.slug] || "🌍"}
+                </div>
+                <div className="mb-1 text-lg font-semibold group-hover:text-accent">
+                  {city.name}
+                </div>
+                <div className="text-sm text-muted">
+                  {city.chunk_count} local tips
+                </div>
+                <div className="mt-2 flex flex-wrap justify-center gap-1">
+                  {city.categories.slice(0, 4).map((cat) => (
+                    <span
+                      key={cat}
+                      className={`rounded-full px-2 py-0.5 text-[10px] badge-${cat}`}
                     >
-                      {q}
-                    </button>
+                      {cat}
+                    </span>
                   ))}
                 </div>
-              </div>
+              </button>
             ))}
           </div>
+
+          {ingestStatus.phase !== "done" && (
+            <div className="mt-6 text-center">
+              <p className="mb-3 text-sm text-warning">
+                ⚠️ City data needs to be indexed first
+              </p>
+              <IngestPanel status={ingestStatus} onIngest={startIngestion} />
+            </div>
+          )}
         </div>
-      </aside>
+      </div>
+    );
+  }
 
-      {/* ── Main content ── */}
-      <main className="flex flex-1 flex-col">
-        <div className="sticky top-0 z-10 border-b border-border bg-background/80 p-4 backdrop-blur-md">
-          <form onSubmit={handleSubmit} className="mx-auto flex max-w-3xl gap-2">
-            <input
-              type="text"
-              value={question}
-              onChange={(e) => setQuestion(e.target.value)}
-              placeholder="Ask anything about your emails..."
-              className="flex-1 rounded-xl border border-border bg-card px-4 py-3 text-sm text-foreground placeholder-muted outline-none transition-colors focus:border-accent"
-              disabled={loading}
-            />
-            <button
-              type="submit"
-              disabled={loading || !question.trim()}
-              className="rounded-xl bg-accent px-5 py-3 text-sm font-medium text-white transition-colors hover:bg-accent-hover disabled:cursor-not-allowed disabled:opacity-50"
-            >
-              {loading ? <LoadingDots /> : "Ask"}
-            </button>
-          </form>
-        </div>
-
-        <div className="flex-1 overflow-y-auto p-4">
-          <div className="mx-auto max-w-3xl space-y-6">
-            <div ref={answerEndRef} />
-
-            {loading && (
-              <div className="rounded-xl border border-border bg-card p-6">
-                <p className="text-sm text-muted">
-                  Searching emails and generating answer <LoadingDots />
-                </p>
-              </div>
-            )}
-
-            {results.length === 0 && !loading && (
-              <div className="flex flex-col items-center justify-center py-24 text-center">
-                <div className="mb-4 text-5xl">📬</div>
-                <h2 className="text-lg font-semibold">No queries yet</h2>
-                <p className="mt-1 max-w-md text-sm text-muted">
-                  Type a question above or click a test question from the
-                  sidebar to get started. Make sure to run the ingestion
-                  pipeline first.
-                </p>
-              </div>
-            )}
-
-            {results.map((result, idx) => (
-              <div
-                key={`${result.question}-${idx}`}
-                className="rounded-xl border border-border bg-card"
-              >
-                {/* Question */}
-                <div className="border-b border-border px-5 py-3">
-                  <p className="text-sm font-medium text-accent">
-                    {result.question}
-                  </p>
-                </div>
-
-                {/* Answer */}
-                <div className="px-5 py-4">
-                  <div
-                    className="prose-answer text-sm text-foreground/90"
-                    dangerouslySetInnerHTML={{
-                      __html: formatMarkdown(result.answer),
-                    }}
-                  />
-                </div>
-
-                {/* Sources */}
-                {result.sources.length > 0 && (
-                  <div className="border-t border-border px-5 py-3">
-                    <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-muted">
-                      Sources ({result.sources.length})
-                    </p>
-                    <div className="space-y-2">
-                      {result.sources.map((source, si) => (
-                        <SourceCard
-                          key={`${source.subject}-${si}`}
-                          source={source}
-                          index={si}
-                        />
-                      ))}
-                    </div>
-                  </div>
-                )}
-              </div>
-            ))}
-          </div>
-        </div>
-      </main>
-    </div>
-  );
-}
-
-/**
- * Lightweight markdown → HTML for LLM responses.
- * Handles: bold, italic, inline code, headers, lists, blockquotes, paragraphs.
- */
-function formatMarkdown(md: string): string {
-  return md
-    .replace(/&/g, "&amp;")
-    .replace(/</g, "&lt;")
-    .replace(/>/g, "&gt;")
-    .replace(/^### (.+)$/gm, "<h3>$1</h3>")
-    .replace(/^## (.+)$/gm, "<h2>$1</h2>")
-    .replace(/^# (.+)$/gm, "<h1>$1</h1>")
-    .replace(/\*\*(.+?)\*\*/g, "<strong>$1</strong>")
-    .replace(/\*(.+?)\*/g, "<em>$1</em>")
-    .replace(/`([^`]+)`/g, "<code>$1</code>")
-    .replace(/^&gt; (.+)$/gm, "<blockquote>$1</blockquote>")
-    .replace(/^- (.+)$/gm, "<li>$1</li>")
-    .replace(/^(\d+)\. (.+)$/gm, "<li>$2</li>")
-    .replace(/(<li>.*<\/li>\n?)+/g, (m) => `<ul>${m}</ul>`)
-    .replace(/\n{2,}/g, "</p><p>")
-    .replace(/\n/g, "<br/>")
-    .replace(/^/, "<p>")
-    .replace(/$/, "</p>");
+  return null;
 }

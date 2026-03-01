@@ -5,3 +5,7 @@ data/chunks.json
 __pycache__/
 *.pyc
 .DS_Store
+.pytest_cache/
+*.egg-info/
+dist/
+build/

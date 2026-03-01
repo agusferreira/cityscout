@@ -1,0 +1,227 @@
+[
+  {
+    "id": "ba-coffee-01",
+    "city": "buenos-aires",
+    "category": "coffee",
+    "source_type": "reddit",
+    "source_url": "https://reddit.com/r/BuenosAires/comments/abc123/best_specialty_coffee",
+    "date": "2024-11-15",
+    "text": "Best specialty coffee in Buenos Aires — hands down LAB Tostadores de Café in Chacarita. They roast on-site, pour-overs are insane, and the baristas actually know what they're talking about. Single origins from Yungas, Bolivia and Cauca, Colombia. The space is minimal, concrete and wood, very third-wave. They also have a training lab if you want to take a cupping class. Usually not crowded on weekday mornings. Around $3-4 USD for a V60."
+  },
+  {
+    "id": "ba-coffee-02",
+    "city": "buenos-aires",
+    "category": "coffee",
+    "source_type": "reddit",
+    "source_url": "https://reddit.com/r/BuenosAires/comments/def456/coffee_palermo",
+    "date": "2024-10-02",
+    "text": "If you're in Palermo and need good coffee, Cuervo Café on Thames is my go-to. They source from small Argentine farms (Salta and Jujuy provinces mostly). Great flat whites, the cortado is solid too. It's got this cozy backyard patio that's perfect for working on your laptop. Wifi is reliable. They also do cold brew on tap in summer which is amazing. Pastries are baked in-house. Small space though, gets packed after 10am on weekends."
+  },
+  {
+    "id": "ba-coffee-03",
+    "city": "buenos-aires",
+    "category": "coffee",
+    "source_type": "blog",
+    "source_url": "https://perfectdailygrind.com/buenos-aires-specialty-coffee-guide",
+    "date": "2024-09-20",
+    "text": "Buenos Aires specialty coffee guide: The city has seen an explosion of third-wave coffee shops in recent years. Negro Cueva de Café in Villa Crespo is a must-visit — they've won multiple Argentine barista championships. Their espresso-based drinks are technically perfect. The space feels like a hidden cave (hence the name), dark and moody. Coffee & Cía in Belgrano is another standout, focusing on direct-trade beans from Brazilian micro-lots. For a more traditional Argentine coffee experience with a modern twist, try Full City Coffee House in Recoleta — they blend old-school café culture with specialty-grade beans."
+  },
+  {
+    "id": "ba-coffee-04",
+    "city": "buenos-aires",
+    "category": "coffee",
+    "source_type": "reddit",
+    "source_url": "https://reddit.com/r/coffee/comments/ghi789/argentina_coffee_scene",
+    "date": "2024-08-30",
+    "text": "Honestly surprised by BA's coffee scene. Birkin Coffee in San Telmo absolutely killed it — natural processed Ethiopian single origin, perfectly extracted. The owner is a former national barista champion. Also check out All Saints Café near Plaza Serrano, they do creative seasonal drinks alongside solid classics. Their affogato with house-made ice cream is legendary. Most specialty shops are $2-5 USD range which is incredibly affordable compared to US/Europe prices."
+  },
+  {
+    "id": "ba-food-01",
+    "city": "buenos-aires",
+    "category": "food",
+    "source_type": "reddit",
+    "source_url": "https://reddit.com/r/BuenosAires/comments/jkl012/hidden_gem_restaurants",
+    "date": "2024-12-01",
+    "text": "Hidden food gems in Buenos Aires: El Banco Rojo in Palermo is a hole-in-the-wall burger joint that makes insanely good smash burgers and craft beer. Nothing fancy, just perfect execution. For authentic Argentine empanadas, skip the tourist spots and go to La Cocina in San Telmo — they've been making empanadas for 30+ years. The carne suave (mild beef) and jamón y queso are classic. El Sanjuanino in Recoleta does northwestern Argentine food — their locro (a hearty corn and meat stew) and humitas are incredible, especially in winter."
+  },
+  {
+    "id": "ba-food-02",
+    "city": "buenos-aires",
+    "category": "food",
+    "source_type": "blog",
+    "source_url": "https://saltshaker.net/buenos-aires-food-guide-2024",
+    "date": "2024-11-10",
+    "text": "Buenos Aires food guide — where locals actually eat: For asado (Argentine BBQ), skip the tourist parrillas on Puerto Madero and head to Don Julio in Palermo for the best steak experience — yes there's a line, but it moves fast and they give you free wine while you wait. The entraña (skirt steak) and provoleta are perfection. If you want a local neighborhood parrilla experience without the hype, try La Cabrera or El Ferroviario in Caballito. For pizza, Buenos Aires has its own style — thick, cheesy, and eaten standing up. Güerrín on Corrientes Avenue is the classic. Fugazzeta (onion pizza) is the local favorite."
+  },
+  {
+    "id": "ba-food-03",
+    "city": "buenos-aires",
+    "category": "food",
+    "source_type": "reddit",
+    "source_url": "https://reddit.com/r/BuenosAires/comments/mno345/vegetarian_food",
+    "date": "2024-10-20",
+    "text": "Vegetarian in Buenos Aires is totally doable despite the steak reputation. Artemisia in Palermo is excellent — seasonal tasting menus using local organic produce, beautifully plated. Bio in Villa Crespo does a killer daily lunch menu with vegan options. Buenos Aires Verde in Palermo Hollywood has been the vegetarian standard for years — great salads, falafel bowls, and smoothies. For vegan ice cream, check out Rapanui plant-based line or Mudrá heladería. Also, most parrillas will grill vegetables for you — grilled provolone and mixed grilled veggies are traditional sides."
+  },
+  {
+    "id": "ba-food-04",
+    "city": "buenos-aires",
+    "category": "food",
+    "source_type": "local_tip",
+    "source_url": "https://buenosairesfoodies.com/closed-door-restaurants",
+    "date": "2024-09-15",
+    "text": "Puertas cerradas (closed-door restaurants) are a Buenos Aires dining tradition you shouldn't miss. These are chefs cooking in their homes or private spaces, usually multi-course meals with wine pairings. Casa Coupage in Palermo does an incredible 7-course menu with Argentine wine pairings for around $80 USD. iLatina fuses Latin American cuisines in an intimate setting. Cocina Sunae does Korean-Argentine fusion in a beautiful townhouse. Book at least a week in advance. It's an unforgettable dining experience — intimate, personal, and you meet interesting people at communal tables."
+  },
+  {
+    "id": "ba-food-05",
+    "city": "buenos-aires",
+    "category": "food",
+    "source_type": "reddit",
+    "source_url": "https://reddit.com/r/BuenosAires/comments/pqr678/street_food",
+    "date": "2024-08-15",
+    "text": "Street food and cheap eats in Buenos Aires: Choripán (chorizo sandwich) is king — best ones at the carts in Costanera Sur ecological reserve, around $2 USD. Bondiola sandwich at any street cart is also amazing. For pizza by the slice, Ugi's is open 24 hours and a large muzza slice is $1. Medialunas (croissants) at any bakery for breakfast with a café con leche, total cost like $2. Mercado de San Telmo has tons of stalls with everything from fresh pasta to oysters. The empanada spot inside the market is solid and cheap — 6 empanadas for $3."
+  },
+  {
+    "id": "ba-nightlife-01",
+    "city": "buenos-aires",
+    "category": "nightlife",
+    "source_type": "reddit",
+    "source_url": "https://reddit.com/r/BuenosAires/comments/stu901/nightlife_guide",
+    "date": "2024-11-25",
+    "text": "Buenos Aires nightlife starts LATE. Like, don't show up to a club before 2am or you'll be alone. Pre-game at a bar around midnight. For electronic music: Crobar in Palermo is the big club, international DJs every weekend. Club 69 at Niceto Vega is legendary for its wild themed parties — very queer-friendly, amazing performances. For something more underground, Cocoliche in Microcentro has techno nights in a basement. For drinks: Florería Atlántico in Retiro is a speakeasy disguised as a flower shop — one of the world's best bars. Verne Club in Palermo is another great cocktail spot, Jules Verne themed."
+  },
+  {
+    "id": "ba-nightlife-02",
+    "city": "buenos-aires",
+    "category": "nightlife",
+    "source_type": "blog",
+    "source_url": "https://thekingofba.com/nightlife-guide-buenos-aires",
+    "date": "2024-10-10",
+    "text": "Buenos Aires nightlife culture explained: Porteños (locals) have dinner around 10-11pm, then maybe go to a bar around midnight-1am, and clubs don't peak until 3-4am. It's totally normal to get home at 7am. Thursday through Saturday are the big nights. For live music: La Bomba de Tiempo at Konex on Monday nights is a legendary drum circle/improvisational percussion show — get there early, it sells out. Notorious in Palermo has great jazz. For tango shows that aren't tourist traps: Milonga at Salón Canning or La Catedral in Almagro — the latter is in a raw warehouse space and locals actually dance there."
+  },
+  {
+    "id": "ba-nightlife-03",
+    "city": "buenos-aires",
+    "category": "nightlife",
+    "source_type": "reddit",
+    "source_url": "https://reddit.com/r/BuenosAires/comments/vwx234/craft_beer",
+    "date": "2024-09-05",
+    "text": "Craft beer scene in BA is huge. On Tap in Palermo has like 30 rotating taps of local Argentine craft beers — IPAs, stouts, sours, everything. Strange Brewing in Villa Crespo brews on-site and their hazy IPA is excellent. Cervecería Antares has multiple locations and is a good intro to Argentine craft beer. For beer and food combo, Berlina Patagonia in Palermo does excellent German-inspired food with their own brews. Most pints are $3-5 USD. Thursday is the unofficial craft beer night in Palermo — most bars have specials."
+  },
+  {
+    "id": "ba-culture-01",
+    "city": "buenos-aires",
+    "category": "culture",
+    "source_type": "blog",
+    "source_url": "https://culturetrip.com/south-america/argentina/buenos-aires-art-guide",
+    "date": "2024-11-05",
+    "text": "Buenos Aires art and culture guide: MALBA (Museum of Latin American Art) is world-class — the permanent collection spans Frida Kahlo to contemporary Argentine artists. Free on Wednesdays. The Museo Nacional de Bellas Artes is Argentina's answer to the Met — free always, incredible collection of European and Argentine art. For contemporary art, check out Fundación Proa in La Boca and Centro Cultural Kirchner (CCK) — a massive converted post office with free exhibitions, concerts, and events. Usina del Arte in La Boca hosts free classical concerts in a stunning converted power plant."
+  },
+  {
+    "id": "ba-culture-02",
+    "city": "buenos-aires",
+    "category": "culture",
+    "source_type": "reddit",
+    "source_url": "https://reddit.com/r/BuenosAires/comments/yza567/street_art",
+    "date": "2024-10-30",
+    "text": "Buenos Aires has some of the best street art in the world. The big murals in Palermo are impressive but for the real deal, explore Coghlan and Colegiales neighborhoods — less touristy, incredible work. Take a street art tour with Graffitimundo — they connect you with actual artists and explain the political/social context behind the murals. In La Boca beyond Caminito tourist strip, there's amazing raw street art. Villa Crespo is becoming the new hotspot for galleries and murals. Many street artists have studios you can visit by appointment."
+  },
+  {
+    "id": "ba-culture-03",
+    "city": "buenos-aires",
+    "category": "culture",
+    "source_type": "local_tip",
+    "source_url": "https://buenosaireslocal.com/literary-city",
+    "date": "2024-08-20",
+    "text": "Buenos Aires is a UNESCO City of Literature and it shows. El Ateneo Grand Splendid is a former theater converted into the world's most beautiful bookstore — go even if you don't read Spanish, the architecture is stunning. Eterna Cadencia in Palermo is an independent bookstore with a great café and regular literary events. Walrus Books in San Telmo specializes in used English-language books. The Feria del Libro (book fair) in April is massive. For Borges fans: the Borges walking tour through downtown covers key locations from his stories. The city breathes literature."
+  },
+  {
+    "id": "ba-neighborhoods-01",
+    "city": "buenos-aires",
+    "category": "neighborhoods",
+    "source_type": "reddit",
+    "source_url": "https://reddit.com/r/BuenosAires/comments/bcd890/where_to_stay",
+    "date": "2024-12-10",
+    "text": "Neighborhood guide for Buenos Aires visitors: Palermo is the biggest and most popular — split into sub-neighborhoods. Palermo Soho has boutiques, cafés, and restaurants. Palermo Hollywood has more nightlife and bars. It's safe, walkable, and has great transit. Recoleta is upscale, European-feeling, gorgeous architecture. San Telmo is bohemian, older buildings, Sunday antique market is legendary. Villa Crespo is the up-and-coming foodie neighborhood — cheaper than Palermo but equally cool. Avoid staying in Once, Constitución, or La Boca (except for day visits to Caminito). Subte (metro) + buses go everywhere."
+  },
+  {
+    "id": "ba-neighborhoods-02",
+    "city": "buenos-aires",
+    "category": "neighborhoods",
+    "source_type": "blog",
+    "source_url": "https://nomadicmatt.com/buenos-aires-neighborhoods",
+    "date": "2024-09-25",
+    "text": "Living in Buenos Aires — neighborhood breakdown: Colegiales and Chacarita are where locals in their 20s-30s are moving — great restaurants, breweries, and night markets, much more authentic than touristy Palermo. Belgrano has a big Chinatown (Barrio Chino) with amazing Asian food and a residential, family vibe. Caballito is deep-local, very few tourists, great parrillas and parks. Microcentro/San Nicolás is the downtown business district — packed during the day, dead at night, but has amazing architecture (look up!). Puerto Madero is the waterfront — modern, expensive, good for a walk but not much soul."
+  },
+  {
+    "id": "ba-fitness-01",
+    "city": "buenos-aires",
+    "category": "fitness",
+    "source_type": "reddit",
+    "source_url": "https://reddit.com/r/BuenosAires/comments/efg123/gyms_fitness",
+    "date": "2024-11-18",
+    "text": "Fitness in Buenos Aires: Megatlon is the big chain gym — multiple locations, clean, well-equipped, day passes available (around $8-10 USD). CrossFit is huge here — CrossFit Palermo and CrossFit Buenos Aires both welcome drop-ins. For running, the Bosques de Palermo (Palermo woods) has a 3km loop around the lake, plus the Rosedal rose garden has beautiful paths. Costanera Sur ecological reserve is a flat 5km out-and-back along the river. Yoga is popular — Casa Yoga in Palermo and Ciudad Yoga offer drop-in classes in English. Most classes are $5-8 USD."
+  },
+  {
+    "id": "ba-fitness-02",
+    "city": "buenos-aires",
+    "category": "fitness",
+    "source_type": "local_tip",
+    "source_url": "https://bafitness.com/outdoor-activities",
+    "date": "2024-10-15",
+    "text": "Outdoor activities in Buenos Aires: Cycling is great — the city has an extensive network of bike lanes (ciclovías). BA Ecobici is the free bike-share system, just register with your passport. The ride along the costanera (waterfront) from Puerto Madero to the ecological reserve is beautiful. Kayaking in the Tigre delta (1 hour from downtown by train) is an amazing day trip — paddle through channels surrounded by lush vegetation. Polo is Argentina's sport — you can take lessons at La Martina in the outskirts for around $100 including transport, or watch matches for free at Campo Argentino de Polo during the open season (Oct-Dec)."
+  },
+  {
+    "id": "ba-food-06",
+    "city": "buenos-aires",
+    "category": "food",
+    "source_type": "reddit",
+    "source_url": "https://reddit.com/r/BuenosAires/comments/food_markets",
+    "date": "2024-11-22",
+    "text": "Markets in Buenos Aires for food lovers: Mercado de San Telmo is the main one — a beautiful iron-structure market from 1897. Inside you'll find coffee shops, wine bars, fresh pasta, artisanal cheese, and tons of street food stalls. Go on a weekday to avoid Sunday market crowds. Mercado de Belgrano is a smaller local market with great produce and a few prepared food stalls. Feria de Mataderos on Sundays is a gaucho-themed fair in the outskirts with traditional food, folk music, and horse demonstrations — very authentic and zero tourists. For organic produce, visit the farmers market at Parque Rivadavia on Saturdays."
+  },
+  {
+    "id": "ba-culture-04",
+    "city": "buenos-aires",
+    "category": "culture",
+    "source_type": "reddit",
+    "source_url": "https://reddit.com/r/BuenosAires/comments/tango_culture",
+    "date": "2024-10-05",
+    "text": "Tango in Buenos Aires — skip the expensive dinner shows and go to a real milonga instead. La Viruta in Palermo has beginner-friendly classes before the social dancing starts — great atmosphere, mixed crowd of locals and visitors. Salón Canning on Monday nights is one of the most traditional milongas. La Catedral in Almagro is in a raw warehouse space — very alternative, young crowd, also has rock milongas. If you want a show, Café de los Angelitos is beautiful but pricey, or catch a free outdoor tango at the bandshell in Barrancas de Belgrano park on weekend evenings. Most milongas charge $5-10 entry."
+  },
+  {
+    "id": "ba-coffee-05",
+    "city": "buenos-aires",
+    "category": "coffee",
+    "source_type": "local_tip",
+    "source_url": "https://buenosairescoffee.com/traditional-cafes",
+    "date": "2024-07-30",
+    "text": "Buenos Aires traditional cafés (cafés notables) are living history. Café Tortoni on Avenida de Mayo has been serving since 1858 — it's touristy but genuinely beautiful with its marble tables, stained glass, and old-world charm. The café con leche and medialunas are classic. El Federal in San Telmo dates to 1864 and has original fixtures. Las Violetas in Almagro is an art nouveau palace — go for afternoon tea (merienda) with pastries, it's like stepping into 1920. Bar El Hipopótamo near Congreso is the locals' choice for a quiet coffee and newspaper. These aren't specialty coffee — they're about atmosphere and tradition."
+  },
+  {
+    "id": "ba-neighborhoods-03",
+    "city": "buenos-aires",
+    "category": "neighborhoods",
+    "source_type": "reddit",
+    "source_url": "https://reddit.com/r/digitalnomads/comments/ba_coworking",
+    "date": "2024-11-08",
+    "text": "Digital nomad guide to Buenos Aires: Best coworking spaces are in Palermo — AreaTres has excellent internet and a rooftop. La Maquinita in Villa Crespo is more creative/startup vibes. WeWork has several locations if you want corporate-grade facilities. Internet speed is generally good (50-100 Mbps in most cafés). Cost of living is very low for the quality — you can eat well for $15-20/day, rent a nice apartment in Palermo for $500-800/month. The timezone (GMT-3) works well for US East Coast overlap. Biggest downside: sometimes unstable electricity can affect wifi."
+  },
+  {
+    "id": "ba-food-07",
+    "city": "buenos-aires",
+    "category": "food",
+    "source_type": "blog",
+    "source_url": "https://eater.com/buenos-aires-ice-cream",
+    "date": "2024-08-10",
+    "text": "Ice cream (helado) in Buenos Aires deserves its own guide. Argentine helado is Italian-style gelato, and it's INCREDIBLE. Cadore in Centro has been voted best ice cream in the city — their dulce de leche granizado and sambayón flavors are legendary. Rapanui on multiple locations does Patagonian-inspired flavors with premium chocolate. Freddo and Persicco are the reliable chains with consistently good quality. Order by weight (1/4 kg, 1/2 kg), not scoops. Key flavors to try: dulce de leche (obviously), sambayón (zabaglione), mascarpone with berries, and any chocolate variant. Most shops stay open until midnight."
+  },
+  {
+    "id": "ba-nightlife-04",
+    "city": "buenos-aires",
+    "category": "nightlife",
+    "source_type": "local_tip",
+    "source_url": "https://buenosairesbynight.com/wine-bars",
+    "date": "2024-09-30",
+    "text": "Wine culture in Buenos Aires: Argentina produces world-class Malbec and the wine bars in BA are amazing and affordable. Pain et Vin in Palermo has an incredible natural wine selection with small plates. Aldo's Vinoteca in Recoleta is more traditional — huge Argentine wine list with knowledgeable sommeliers. Gran Bar Danzón does creative cocktails AND has an excellent wine program. For wine tasting, Anuva Wines does private tastings with an Argentine sommelier who'll teach you about Mendoza's regions. Most bottles in restaurants cost $5-15 USD, which would be $30-80 in the US. Tuesday is often 2-for-1 wine at many restaurants."
+  }
+]

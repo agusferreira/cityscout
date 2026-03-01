@@ -1,204 +1,201 @@
-import json, os, re, time, threading, mailbox
-from email.header import decode_header, make_header
-from email.utils import parsedate_to_datetime
+"""
+CityScout — Personalized city guides powered by RAG.
+FastAPI backend with Pinecone vector search, OpenAI embeddings & generation, and RAGAS evaluation.
+"""
+
+import json, os, re, time, threading, glob
 from pathlib import Path
 
-import html2text
 from dotenv import load_dotenv
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from openai import OpenAI
 from pinecone import Pinecone, ServerlessSpec
 from pydantic import BaseModel
+from typing import Optional
+
+from prompts import (
+    PROFILE_SYSTEM_PROMPT,
+    PROFILE_USER_TEMPLATE,
+    GUIDE_SYSTEM_PROMPT,
+    GUIDE_USER_TEMPLATE,
+)
+
+# ── Config ──
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 load_dotenv(BASE_DIR / ".env")
 load_dotenv(BASE_DIR.parent / ".env")
 
-MBOX_PATH = BASE_DIR / "Emails" / "Correo" / "Todo el correo, incluido Spam y Papelera.mbox"
-CHUNKS_PATH = BASE_DIR / "data" / "chunks.json"
-INDEX = os.getenv("PINECONE_INDEX", "newsletter-rag")
+CITIES_DIR = BASE_DIR / "data" / "cities"
+INDEX = os.getenv("PINECONE_INDEX", "cityscout-rag")
+EMBEDDING_MODEL = "openai/text-embedding-3-small"
+CHAT_MODEL = "openai/gpt-4o-mini"
 
-openai_client = OpenAI()
+openai_client = OpenAI(
+    api_key=os.getenv("OPENAI_API_KEY"),
+    base_url=os.getenv("OPENAI_BASE_URL", "https://api.openai.com/v1"),
+)
 pc = Pinecone(api_key=os.getenv("PINECONE_API_KEY"))
 
-# html2text: converts HTML emails to clean plain text in one call
-h2t = html2text.HTML2Text()
-h2t.ignore_links = True
-h2t.ignore_images = True
-h2t.ignore_emphasis = True
+app = FastAPI(title="CityScout RAG API")
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
-app = FastAPI(title="Newsletter RAG")
-app.add_middleware(CORSMiddleware, allow_origins=["*"], allow_methods=["*"], allow_headers=["*"])
+ingest_state = {
+    "running": False,
+    "phase": "idle",
+    "total": 0,
+    "processed": 0,
+    "error": None,
+}
 
-ingest_state = {"running": False, "phase": "idle", "total": 0, "processed": 0, "error": None}
+# ── Pydantic Models ──
+
+
+class QuizAnswers(BaseModel):
+    coffee: str
+    food: str
+    activity: str
+    nightlife: str
+    neighborhood: str
+    budget: str
+
+
+class ProfileRequest(BaseModel):
+    quiz_answers: QuizAnswers
+
+
+class GuideRequest(BaseModel):
+    profile: str
+    city: str
+    top_k: int = 8
 
 
 # ── Helpers ──
 
-def header(msg, key):
-    """Decode RFC2047 email header to plain string."""
-    raw = msg[key]
-    if not raw:
-        return ""
-    try:
-        return str(make_header(decode_header(raw)))
-    except Exception:
-        return str(raw)
+
+def get_available_cities() -> list[dict]:
+    """Scan data/cities/ for JSON files and return city metadata."""
+    cities = []
+    if not CITIES_DIR.exists():
+        return cities
+    for fp in sorted(CITIES_DIR.glob("*.json")):
+        slug = fp.stem
+        name = slug.replace("-", " ").title()
+        try:
+            data = json.loads(fp.read_text())
+            chunk_count = len(data)
+            categories = sorted(set(item.get("category", "") for item in data))
+        except Exception:
+            chunk_count = 0
+            categories = []
+        cities.append(
+            {
+                "slug": slug,
+                "name": name,
+                "chunk_count": chunk_count,
+                "categories": categories,
+            }
+        )
+    return cities
 
 
-def get_body(msg):
-    """Extract readable text from an email, handling multipart and HTML."""
-    texts, htmls = [], []
-    for part in msg.walk():
-        if part.get("Content-Disposition", "").startswith("attachment"):
-            continue
-        payload = part.get_payload(decode=True)
-        if not payload:
-            continue
-        decoded = payload.decode(part.get_content_charset() or "utf-8", errors="ignore")
-        ct = part.get_content_type()
-        if ct == "text/plain":
-            texts.append(decoded)
-        elif ct == "text/html":
-            htmls.append(decoded)
-
-    raw = "\n".join(texts) if texts else h2t.handle("\n".join(htmls)) if htmls else ""
-    return re.sub(r"\s+", " ", raw).strip()
+def embed_text(text: str) -> list[float]:
+    """Create an embedding vector for a single text string."""
+    resp = openai_client.embeddings.create(model=EMBEDDING_MODEL, input=text)
+    return resp.data[0].embedding
 
 
-def chunk(text, size=500, overlap=75):
-    """Split text into overlapping word-level chunks."""
+def embed_batch(texts: list[str]) -> list[list[float]]:
+    """Create embedding vectors for a batch of texts."""
+    resp = openai_client.embeddings.create(model=EMBEDDING_MODEL, input=texts)
+    return [d.embedding for d in resp.data]
+
+
+def chunk_text(text: str, max_words: int = 400, overlap: int = 50) -> list[str]:
+    """Split text into overlapping word-level chunks if needed."""
     words = text.split()
-    if len(words) <= size:
+    if len(words) <= max_words:
         return [text] if words else []
     chunks, i = [], 0
     while i < len(words):
-        chunks.append(" ".join(words[i : i + size]))
-        i += size - overlap
+        chunks.append(" ".join(words[i : i + max_words]))
+        i += max_words - overlap
     return chunks
 
 
-# ── Ingestion (runs in background thread) ──
-
-def run_ingestion():
-    global ingest_state
-    try:
-        ingest_state["phase"] = "parsing"
-        mbox = mailbox.mbox(str(MBOX_PATH))
-        all_chunks, cid = [], 0
-
-        for i, msg in enumerate(mbox):
-            body = get_body(msg)
-            if len(body) < 50:
-                continue
-
-            date = ""
-            try:
-                date = parsedate_to_datetime(msg["date"]).isoformat()
-            except Exception:
-                date = msg["date"] or ""
-
-            meta = {
-                "subject": header(msg, "subject") or "No Subject",
-                "from": header(msg, "from") or "Unknown",
-                "date": date,
-            }
-            for c in chunk(body):
-                # Prepend metadata so the embedding captures subject/sender context
-                embed_text = f"Subject: {meta['subject']}\nFrom: {meta['from']}\nDate: {meta['date']}\n\n{c}"
-                all_chunks.append({"id": f"c-{cid}", "text": embed_text, "meta": meta})
-                cid += 1
-
-            if (i + 1) % 100 == 0:
-                print(f"[parse] {i + 1} emails → {len(all_chunks)} chunks")
-
-        print(f"[parse] ✓ {len(all_chunks)} chunks")
-        ingest_state["total"] = len(all_chunks)
-        CHUNKS_PATH.parent.mkdir(parents=True, exist_ok=True)
-        CHUNKS_PATH.write_text(json.dumps(all_chunks))
-
-        # Ensure Pinecone index
-        ingest_state["phase"] = "embedding"
-        if INDEX not in [idx.name for idx in pc.list_indexes()]:
-            print(f"[ingest] Creating index '{INDEX}'...")
-            pc.create_index(
-                name=INDEX, dimension=1536, metric="cosine",
-                spec=ServerlessSpec(cloud="aws", region="us-east-1"),
+def load_city_data(city_slug: str) -> list[dict]:
+    """Load city data from JSON file, chunking long texts."""
+    fp = CITIES_DIR / f"{city_slug}.json"
+    if not fp.exists():
+        raise FileNotFoundError(f"No data file for city: {city_slug}")
+    raw = json.loads(fp.read_text())
+    chunks = []
+    for item in raw:
+        text = item.get("text", "")
+        if len(text.split()) <= 500:
+            # Single chunk — include metadata in the text for richer embedding
+            embed_text_str = (
+                f"City: {item.get('city', '')}\n"
+                f"Category: {item.get('category', '')}\n"
+                f"Source: {item.get('source_type', '')} — {item.get('source_url', '')}\n\n"
+                f"{text}"
             )
-            time.sleep(30)
-
-        idx = pc.Index(INDEX)
-
-        # Embed + upsert in batches of 50
-        for i in range(0, len(all_chunks), 50):
-            batch = all_chunks[i : i + 50]
-            embs = openai_client.embeddings.create(
-                model="text-embedding-3-small", input=[c["text"] for c in batch]
-            ).data
-
-            idx.upsert(vectors=[
+            chunks.append(
                 {
-                    "id": c["id"],
-                    "values": e.embedding,
-                    "metadata": {"text": c["text"][:3500], **c["meta"]},
+                    "id": item.get("id", f"{city_slug}-{len(chunks)}"),
+                    "text": embed_text_str,
+                    "metadata": {
+                        "city": item.get("city", city_slug),
+                        "category": item.get("category", "general"),
+                        "source_url": item.get("source_url", ""),
+                        "source_type": item.get("source_type", ""),
+                        "date": item.get("date", ""),
+                        "text": text[:3500],
+                    },
                 }
-                for c, e in zip(batch, embs)
-            ])
-
-            ingest_state["processed"] = min(i + 50, len(all_chunks))
-            print(f"[ingest] {ingest_state['processed']}/{len(all_chunks)}")
-            time.sleep(0.3)
-
-        ingest_state.update(phase="done", running=False)
-        print("[ingest] ✓ Done")
-
-    except Exception as e:
-        print(f"[ingest] Error: {e}")
-        ingest_state.update(phase="error", error=str(e), running=False)
-
-
-# ── Routes ──
-
-@app.get("/api/health")
-def health():
-    return {"status": "ok"}
-
-
-@app.post("/api/ingest")
-def ingest():
-    if ingest_state["running"]:
-        raise HTTPException(409, "Already running")
-    ingest_state.update(running=True, phase="parsing", total=0, processed=0, error=None)
-    threading.Thread(target=run_ingestion, daemon=True).start()
-    return {"message": "Started", "state": ingest_state}
+            )
+        else:
+            # Split into sub-chunks
+            for ci, c in enumerate(chunk_text(text)):
+                chunks.append(
+                    {
+                        "id": f"{item.get('id', city_slug)}-{ci}",
+                        "text": (
+                            f"City: {item.get('city', '')}\n"
+                            f"Category: {item.get('category', '')}\n"
+                            f"Source: {item.get('source_type', '')} — {item.get('source_url', '')}\n\n"
+                            f"{c}"
+                        ),
+                        "metadata": {
+                            "city": item.get("city", city_slug),
+                            "category": item.get("category", "general"),
+                            "source_url": item.get("source_url", ""),
+                            "source_type": item.get("source_type", ""),
+                            "date": item.get("date", ""),
+                            "text": c[:3500],
+                        },
+                    }
+                )
+    return chunks
 
 
-@app.get("/api/ingest/status")
-def status():
-    return ingest_state
+# ── RAGAS Evaluation ──
 
-
-class Query(BaseModel):
-    question: str
-    top_k: int = 5
-
-
-SYSTEM_PROMPT = (
-    "You are an Email Analysis Expert. Answer using ONLY the provided context. "
-    "Mention source subject/sender when relevant. Use markdown. "
-    "If context is insufficient, say so."
-)
-
-
-# Lazy-init RAGAS evaluator (reused across requests)
 _ragas_cache = {}
 
+
 def get_ragas_evaluator():
-    """Use ragas native factories instead of deprecated langchain wrappers."""
+    """Lazy-init RAGAS evaluator (reused across requests)."""
     if not _ragas_cache:
         from ragas.llms import llm_factory
         from ragas.embeddings import embedding_factory
+
         _ragas_cache["llm"] = llm_factory("gpt-4o-mini")
         _ragas_cache["emb"] = embedding_factory("text-embedding-3-small")
         print("[ragas] Evaluator initialized (gpt-4o-mini + text-embedding-3-small)")
@@ -207,13 +204,13 @@ def get_ragas_evaluator():
 
 def score_with_ragas(question: str, answer: str, contexts: list[str]) -> dict:
     """
-    Evaluate a single RAG result using RAGAS metrics:
-    - Faithfulness: is the answer grounded in the retrieved contexts? (detects hallucination)
-    - ContextPrecision: are the retrieved chunks relevant and well-ranked?
-    - ResponseRelevancy: does the answer actually address the question asked?
+    Evaluate a RAG result with RAGAS metrics:
+    - Faithfulness: is the answer grounded in retrieved contexts?
+    - ContextPrecision: are the retrieved chunks relevant?
+    - ResponseRelevancy: does the answer address the question?
     """
     from ragas import SingleTurnSample, EvaluationDataset, evaluate
-    from ragas.metrics.collections import Faithfulness, LLMContextPrecisionWithoutReference, ResponseRelevancy
+    from ragas.metrics import Faithfulness, LLMContextPrecisionWithoutReference, ResponseRelevancy
 
     evaluator_llm, evaluator_emb = get_ragas_evaluator()
 
@@ -239,13 +236,16 @@ def score_with_ragas(question: str, answer: str, contexts: list[str]) -> dict:
 
     return {
         "faithfulness": round(float(df["faithfulness"].iloc[0]), 3),
-        "context_precision": round(float(df[precision_col].iloc[0]), 3) if precision_col else None,
-        "relevancy": round(float(df[relevancy_col].iloc[0]), 3) if relevancy_col else None,
+        "context_precision": (
+            round(float(df[precision_col].iloc[0]), 3) if precision_col else None
+        ),
+        "relevancy": (
+            round(float(df[relevancy_col].iloc[0]), 3) if relevancy_col else None
+        ),
     }
 
 
 def _score_label(val):
-    """Human-readable quality label for a RAGAS score."""
     if val is None:
         return "N/A"
     if val >= 0.8:
@@ -255,98 +255,308 @@ def _score_label(val):
     return f"{val:.3f} ✗ LOW"
 
 
-@app.post("/api/query")
-def query(req: Query):
+# ── Ingestion ──
+
+
+def run_ingestion():
+    """Ingest all city data files into Pinecone."""
+    global ingest_state
+    try:
+        ingest_state["phase"] = "loading"
+        print("[ingest] Loading city data files...")
+
+        all_chunks = []
+        city_files = list(CITIES_DIR.glob("*.json"))
+        if not city_files:
+            raise FileNotFoundError(f"No city data files found in {CITIES_DIR}")
+
+        for fp in city_files:
+            city_slug = fp.stem
+            print(f"[ingest] Loading {city_slug}...")
+            chunks = load_city_data(city_slug)
+            all_chunks.extend(chunks)
+            print(f"[ingest]   → {len(chunks)} chunks from {city_slug}")
+
+        print(f"[ingest] Total: {len(all_chunks)} chunks across {len(city_files)} cities")
+        ingest_state["total"] = len(all_chunks)
+
+        # Ensure Pinecone index exists
+        ingest_state["phase"] = "indexing"
+        existing = [idx.name for idx in pc.list_indexes()]
+        if INDEX not in existing:
+            print(f"[ingest] Creating Pinecone index '{INDEX}'...")
+            pc.create_index(
+                name=INDEX,
+                dimension=1536,
+                metric="cosine",
+                spec=ServerlessSpec(cloud="aws", region="us-east-1"),
+            )
+            # Wait for index to be ready
+            print("[ingest] Waiting for index to be ready...")
+            time.sleep(30)
+
+        idx = pc.Index(INDEX)
+
+        # Embed + upsert in batches
+        ingest_state["phase"] = "embedding"
+        batch_size = 50
+        for i in range(0, len(all_chunks), batch_size):
+            batch = all_chunks[i : i + batch_size]
+            texts = [c["text"] for c in batch]
+
+            print(f"[ingest] Embedding batch {i//batch_size + 1}...")
+            embeddings = embed_batch(texts)
+
+            vectors = [
+                {
+                    "id": c["id"],
+                    "values": emb,
+                    "metadata": c["metadata"],
+                }
+                for c, emb in zip(batch, embeddings)
+            ]
+
+            idx.upsert(vectors=vectors)
+            ingest_state["processed"] = min(i + batch_size, len(all_chunks))
+            print(
+                f"[ingest] {ingest_state['processed']}/{len(all_chunks)} vectors upserted"
+            )
+            time.sleep(0.3)  # Rate limit courtesy
+
+        ingest_state.update(phase="done", running=False)
+        print(f"[ingest] ✓ Done — {len(all_chunks)} vectors indexed")
+
+    except Exception as e:
+        print(f"[ingest] Error: {e}")
+        import traceback
+        traceback.print_exc()
+        ingest_state.update(phase="error", error=str(e), running=False)
+
+
+# ── Routes ──
+
+
+@app.get("/api/health")
+def health():
+    return {"status": "ok", "service": "cityscout-rag"}
+
+
+@app.get("/api/cities")
+def list_cities():
+    """Return list of available cities with metadata."""
+    cities = get_available_cities()
+    return {"cities": cities}
+
+
+@app.post("/api/ingest")
+def ingest():
+    """Start background ingestion of all city data into Pinecone."""
+    if ingest_state["running"]:
+        raise HTTPException(409, "Ingestion already running")
+    ingest_state.update(running=True, phase="loading", total=0, processed=0, error=None)
+    threading.Thread(target=run_ingestion, daemon=True).start()
+    return {"message": "Ingestion started", "state": ingest_state}
+
+
+@app.get("/api/ingest/status")
+def ingestion_status():
+    return ingest_state
+
+
+@app.post("/api/profile")
+def generate_profile(req: ProfileRequest):
+    """Generate a taste profile from quiz answers using LLM."""
     t_start = time.time()
     print(f"\n{'='*70}")
-    print(f"[query] Question: \"{req.question}\"")
-    print(f"[query] Config: top_k={req.top_k}, index={INDEX}")
+    print(f"[profile] Generating taste profile from quiz answers")
     print(f"{'─'*70}")
 
-    # ── Step 1: Retrieve ──
-    print("[1/3 RETRIEVE] Embedding question...")
-    t1 = time.time()
-    qvec = openai_client.embeddings.create(
-        model="text-embedding-3-small", input=req.question
-    ).data[0].embedding
-    t_embed = time.time() - t1
-    print(f"  → Embedding: {t_embed:.2f}s | dim={len(qvec)} | model=text-embedding-3-small")
+    answers = req.quiz_answers
+    print(f"  Coffee: {answers.coffee}")
+    print(f"  Food: {answers.food}")
+    print(f"  Activity: {answers.activity}")
+    print(f"  Nightlife: {answers.nightlife}")
+    print(f"  Neighborhood: {answers.neighborhood}")
+    print(f"  Budget: {answers.budget}")
 
-    print(f"  → Querying Pinecone index '{INDEX}'...")
+    user_prompt = PROFILE_USER_TEMPLATE.format(
+        coffee=answers.coffee,
+        food=answers.food,
+        activity=answers.activity,
+        nightlife=answers.nightlife,
+        neighborhood=answers.neighborhood,
+        budget=answers.budget,
+    )
+
+    completion = openai_client.chat.completions.create(
+        model=CHAT_MODEL,
+        messages=[
+            {"role": "system", "content": PROFILE_SYSTEM_PROMPT},
+            {"role": "user", "content": user_prompt},
+        ],
+        temperature=0.8,
+        max_tokens=300,
+    )
+
+    profile = completion.choices[0].message.content.strip()
+    elapsed = time.time() - t_start
+
+    print(f"  → Profile: {profile[:100]}...")
+    print(f"  → Generated in {elapsed:.2f}s")
+    print(f"{'='*70}\n")
+
+    return {
+        "profile": profile,
+        "usage": {
+            "prompt_tokens": completion.usage.prompt_tokens,
+            "completion_tokens": completion.usage.completion_tokens,
+            "total_tokens": completion.usage.total_tokens,
+        },
+    }
+
+
+@app.post("/api/guide")
+def generate_guide(req: GuideRequest):
+    """
+    Main RAG pipeline:
+    1. Embed user profile as query
+    2. Query Pinecone for city-specific knowledge
+    3. Generate personalized guide with citations
+    4. Evaluate with RAGAS
+    """
+    t_start = time.time()
+    print(f"\n{'='*70}")
+    print(f"[guide] Generating personalized guide")
+    print(f"[guide] City: {req.city} | top_k: {req.top_k}")
+    print(f"[guide] Profile: {req.profile[:80]}...")
+    print(f"{'─'*70}")
+
+    # ── Step 1: Build profile-aware queries ──
+    categories = ["coffee", "food", "nightlife", "culture", "neighborhoods", "fitness"]
+    query_text = f"Travel recommendations for someone with this taste profile: {req.profile}. City: {req.city}"
+
+    print("[1/4 EMBED] Creating query embedding...")
+    t1 = time.time()
+    query_vec = embed_text(query_text)
+    t_embed = time.time() - t1
+    print(f"  → Embedding: {t_embed:.2f}s | dim={len(query_vec)}")
+
+    # ── Step 2: Retrieve from Pinecone ──
+    print(f"[2/4 RETRIEVE] Querying Pinecone index '{INDEX}'...")
     t2 = time.time()
-    matches = pc.Index(INDEX).query(
-        vector=qvec, top_k=req.top_k, include_metadata=True
-    ).matches
+
+    try:
+        idx = pc.Index(INDEX)
+        results = idx.query(
+            vector=query_vec,
+            top_k=req.top_k,
+            include_metadata=True,
+            filter={"city": {"$eq": req.city.lower().replace(" ", "-")}},
+        )
+        matches = results.matches
+    except Exception as e:
+        print(f"  → Pinecone query failed: {e}")
+        raise HTTPException(500, f"Vector search failed: {str(e)}")
+
     t_search = time.time() - t2
     print(f"  → Search: {t_search:.2f}s | {len(matches)} chunks retrieved")
 
-    sources = [
-        {
+    # Also do category-specific queries for diversity
+    all_matches = {m.id: m for m in matches}
+    for cat in ["coffee", "food", "nightlife", "culture"]:
+        cat_query = f"{req.profile}. Best {cat} recommendations in {req.city}"
+        cat_vec = embed_text(cat_query)
+        try:
+            cat_results = idx.query(
+                vector=cat_vec,
+                top_k=3,
+                include_metadata=True,
+                filter={"city": {"$eq": req.city.lower().replace(" ", "-")}},
+            )
+            for m in cat_results.matches:
+                if m.id not in all_matches:
+                    all_matches[m.id] = m
+        except Exception:
+            pass
+
+    final_matches = sorted(all_matches.values(), key=lambda m: m.score, reverse=True)
+    print(f"  → After diversity expansion: {len(final_matches)} unique chunks")
+
+    # Log retrieved chunks
+    sources = []
+    total_ctx_chars = 0
+    print(f"  {'─'*66}")
+    for i, m in enumerate(final_matches):
+        text = m.metadata.get("text", "")
+        chars = len(text)
+        total_ctx_chars += chars
+        preview = text[:80].replace("\n", " ")
+        source = {
             "score": m.score,
-            "text": m.metadata.get("text", ""),
-            "subject": m.metadata.get("subject", ""),
-            "from": m.metadata.get("from", ""),
+            "text": text,
+            "category": m.metadata.get("category", ""),
+            "source_url": m.metadata.get("source_url", ""),
+            "source_type": m.metadata.get("source_type", ""),
+            "city": m.metadata.get("city", ""),
             "date": m.metadata.get("date", ""),
         }
-        for m in matches
-    ]
-
-    print(f"  {'─'*66}")
-    total_ctx_chars = 0
-    for i, s in enumerate(sources):
-        chars = len(s["text"])
-        total_ctx_chars += chars
-        preview = s["text"][:80].replace("\n", " ")
-        print(f"  [{i+1}] score={s['score']:.4f} | {chars:,} chars")
-        print(f"      from: {s['from'][:50]}")
-        print(f"      subj: {s['subject'][:60]}")
-        print(f"      date: {s['date']}")
+        sources.append(source)
+        print(f"  [{i+1}] score={m.score:.4f} | {chars:,} chars | cat={source['category']}")
+        print(f"      src: {source['source_type']} — {source['source_url'][:60]}")
         print(f"      text: \"{preview}...\"")
     print(f"  {'─'*66}")
     print(f"  Total context: {total_ctx_chars:,} chars across {len(sources)} chunks")
 
-    # ── Step 2: Generate ──
+    # ── Step 3: Generate guide ──
     print(f"{'─'*70}")
-    print("[2/3 GENERATE] Sending to LLM...")
-    ctx = "\n\n---\n\n".join(
-        f"[{i + 1}] {s['from']} | {s['subject']} | {s['date']}\n{s['text']}"
+    print("[3/4 GENERATE] Sending to LLM...")
+
+    context = "\n\n---\n\n".join(
+        f"[{i+1}] Category: {s['category']} | Source: {s['source_type']} — {s['source_url']}\n{s['text']}"
         for i, s in enumerate(sources)
     )
-    prompt_text = f"Context:\n\n{ctx}\n\n---\nQuestion: {req.question}"
-    print(f"  → System prompt: {len(SYSTEM_PROMPT)} chars")
-    print(f"  → User prompt: {len(prompt_text):,} chars (context + question)")
+    user_prompt = GUIDE_USER_TEMPLATE.format(
+        profile=req.profile,
+        city=req.city.replace("-", " ").title(),
+        context=context,
+    )
+
+    print(f"  → System prompt: {len(GUIDE_SYSTEM_PROMPT)} chars")
+    print(f"  → User prompt: {len(user_prompt):,} chars")
 
     t3 = time.time()
     completion = openai_client.chat.completions.create(
-        model="gpt-4o-mini",
+        model=CHAT_MODEL,
         messages=[
-            {"role": "system", "content": SYSTEM_PROMPT},
-            {"role": "user", "content": prompt_text},
+            {"role": "system", "content": GUIDE_SYSTEM_PROMPT},
+            {"role": "user", "content": user_prompt},
         ],
-        temperature=0.3,
-        max_tokens=1200,
+        temperature=0.4,
+        max_tokens=3000,
     )
     t_gen = time.time() - t3
 
-    answer = completion.choices[0].message.content
-    contexts = [s["text"] for s in sources]
+    guide = completion.choices[0].message.content
     tokens = completion.usage
-    print(f"  → LLM responded in {t_gen:.2f}s | model=gpt-4o-mini | temp=0.3")
+    print(f"  → LLM responded in {t_gen:.2f}s | model={CHAT_MODEL}")
     print(f"  → Tokens: prompt={tokens.prompt_tokens:,} + completion={tokens.completion_tokens:,} = {tokens.total_tokens:,}")
-    print(f"  → Answer length: {len(answer):,} chars")
-    for line in answer.split("\n")[:5]:
+    print(f"  → Guide length: {len(guide):,} chars")
+    for line in guide.split("\n")[:5]:
         print(f"  │ {line[:90]}")
-    if answer.count("\n") > 5:
-        print(f"  │ ... ({answer.count(chr(10)) - 5} more lines)")
+    if guide.count("\n") > 5:
+        print(f"  │ ... ({guide.count(chr(10)) - 5} more lines)")
 
-    # ── Step 3: Evaluate with RAGAS ──
+    # ── Step 4: RAGAS Evaluation ──
     print(f"{'─'*70}")
-    print("[3/3 RAGAS] Evaluating retrieval + generation quality...")
-    print(f"  → Metrics: Faithfulness, ContextPrecision, ResponseRelevancy")
-    print(f"  → Input: question ({len(req.question)} chars) + answer ({len(answer)} chars) + {len(contexts)} contexts ({total_ctx_chars:,} chars)")
+    print("[4/4 RAGAS] Evaluating retrieval + generation quality...")
+    contexts_for_eval = [s["text"] for s in sources]
     t4 = time.time()
     try:
-        scores = score_with_ragas(req.question, answer, contexts)
+        scores = score_with_ragas(
+            f"Personalized {req.city} guide for: {req.profile[:200]}",
+            guide,
+            contexts_for_eval,
+        )
         t_ragas = time.time() - t4
         print(f"  → Completed in {t_ragas:.2f}s")
         print(f"  ┌────────────────────────────────────────────┐")
@@ -356,20 +566,21 @@ def query(req: Query):
         print(f"  └────────────────────────────────────────────┘")
     except Exception as e:
         t_ragas = time.time() - t4
-        print(f"  → FAILED in {t_ragas:.2f}s: {e}")
-        scores = {"error": str(e)}
+        print(f"  → RAGAS evaluation failed in {t_ragas:.2f}s: {e}")
+        scores = {"error": str(e), "faithfulness": None, "context_precision": None, "relevancy": None}
 
     # ── Summary ──
     total = time.time() - t_start
     print(f"{'─'*70}")
     print(f"[summary] embed={t_embed:.2f}s → search={t_search:.2f}s → generate={t_gen:.2f}s → ragas={t_ragas:.2f}s")
-    print(f"[summary] Total: {total:.2f}s | {tokens.total_tokens:,} tokens")
+    print(f"[summary] Total: {total:.2f}s | {tokens.total_tokens:,} tokens | {len(sources)} sources")
     print(f"{'='*70}\n")
 
     return {
-        "answer": answer,
+        "guide": guide,
         "sources": sources,
         "scores": scores,
+        "city": req.city,
         "usage": {
             "prompt_tokens": tokens.prompt_tokens,
             "completion_tokens": tokens.completion_tokens,
@@ -382,5 +593,5 @@ if __name__ == "__main__":
     import uvicorn
 
     port = int(os.getenv("API_PORT", "3001"))
-    print(f"Email RAG API → http://localhost:{port}")
+    print(f"CityScout RAG API → http://localhost:{port}")
     uvicorn.run(app, host="0.0.0.0", port=port)

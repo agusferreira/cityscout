@@ -1,0 +1,209 @@
+[
+  {
+    "id": "lis-coffee-01",
+    "city": "lisbon",
+    "category": "coffee",
+    "source_type": "reddit",
+    "source_url": "https://reddit.com/r/Lisbon/comments/xxx111/specialty_coffee",
+    "date": "2024-11-18",
+    "text": "Specialty coffee in Lisbon — the scene is small but excellent. Copenhagen Coffee Lab in Chiado is the big name — Danish-run, incredible filter coffee and pastéis de nata on the side. The rooftop terrace has amazing views over the Tagus. Fabrica Coffee Roasters in Chiado roasts on-site, their single-origin pour-overs are exceptional. Dear Breakfast in Graça/Santos does excellent coffee alongside creative brunch. Hello Kristof in Príncipe Real is a concept store with serious coffee upstairs. Most specialty coffee is €2.50-4 which is great value."
+  },
+  {
+    "id": "lis-coffee-02",
+    "city": "lisbon",
+    "category": "coffee",
+    "source_type": "blog",
+    "source_url": "https://lisbon.travel/specialty-coffee-guide",
+    "date": "2024-10-08",
+    "text": "Lisbon coffee culture has two sides: the traditional and the specialty. Traditional: a bica (espresso) at any pastelaria costs €0.70-1 and is a daily ritual — stand at the counter, knock it back, move on. Brasileira in Chiado is the famous literary café with Fernando Pessoa's bronze statue outside. For specialty: The Mill in Arroios has incredible light roasts and hosts latte art competitions. Village Underground Lisboa in Alcântara is a creative space made of shipping containers with excellent coffee. Montana Lisboa Coffee & Gallery in Príncipe Real combines art gallery with specialty coffee. Comoba in Santos has the best batch brew in the city."
+  },
+  {
+    "id": "lis-coffee-03",
+    "city": "lisbon",
+    "category": "coffee",
+    "source_type": "reddit",
+    "source_url": "https://reddit.com/r/Lisbon/comments/yyy222/laptop_cafes",
+    "date": "2024-09-15",
+    "text": "Laptop-friendly cafés in Lisbon: Second Home in Cais do Sodré is a beautiful coworking/café hybrid — stunning interior by SelgasCano, great coffee, reliable wifi. Wish Slow Coffee House in Intendente is spacious and welcoming for remote workers. Copenhagen Coffee Lab has wifi but gets crowded. Ler Devagar in LX Factory is a bookstore-café in a converted printing warehouse — incredible atmosphere. Tip: Portuguese cafés often don't have wifi or expect you to just have a quick bica. The specialty spots are more digital-nomad friendly."
+  },
+  {
+    "id": "lis-food-01",
+    "city": "lisbon",
+    "category": "food",
+    "source_type": "reddit",
+    "source_url": "https://reddit.com/r/Lisbon/comments/aaa333/food_guide",
+    "date": "2024-12-03",
+    "text": "Lisbon food guide for first-timers: Pastéis de Belém is the original pastel de nata bakery (since 1837) — yes there's a line, yes it's worth it. Sprinkle cinnamon and powdered sugar. For bacalhau (salt cod), which has supposedly 365 recipes in Portugal, try Laurentina in Baixa — their bacalhau com natas is sublime. Cervejaria Ramiro is THE seafood restaurant — famous for their tiger prawns and percebes (goose barnacles). Go for lunch to avoid the 2-hour dinner wait. For cheap eats: any tasca (tavern) serving prato do dia (dish of the day) with soup, main, and drink for €8-10."
+  },
+  {
+    "id": "lis-food-02",
+    "city": "lisbon",
+    "category": "food",
+    "source_type": "blog",
+    "source_url": "https://eater.com/lisbon-essential-restaurants",
+    "date": "2024-11-08",
+    "text": "Essential Lisbon restaurants: Belcanto (2 Michelin stars) by José Avillez is world-class Portuguese cuisine reinvented — tasting menu around €165, book weeks ahead. For something more accessible, his Bairro do Avillez in Chiado is a food complex with several concepts from casual to fancy. Taberna da Rua das Flores in Bairro Alto does incredible petiscos (Portuguese tapas) — tiny space, no reservations, everything is fresh and seasonal. O Velho Eurico in Alfama is a classic tasca where the owner decides what you eat based on what's fresh. Ponto Final in Cacilhas (cross the river by ferry!) has amazing views and cheap seafood."
+  },
+  {
+    "id": "lis-food-03",
+    "city": "lisbon",
+    "category": "food",
+    "source_type": "reddit",
+    "source_url": "https://reddit.com/r/Lisbon/comments/bbb444/street_food",
+    "date": "2024-10-20",
+    "text": "Street food and cheap eats in Lisbon: Bifanas (pork sandwiches) at As Bifanas do Afonso near Martim Moniz are legendary — €3.50 for a sandwich that fills you up. Ginjinha shots (sour cherry liqueur) at A Ginjinha bar near Rossio is a must — €1.50 for a tiny shot, with or without the cherry. Time Out Market in Cais do Sodré has curated stalls from top Lisbon chefs — higher prices than the street but quality is guaranteed. For budget meals: Mercado da Ribeira (the real market, not Time Out side) has amazing fresh produce. Any bakery pastelaria for a bifana or prego (steak sandwich) with a bica is under €4."
+  },
+  {
+    "id": "lis-food-04",
+    "city": "lisbon",
+    "category": "food",
+    "source_type": "local_tip",
+    "source_url": "https://lisbonfoodadventures.com/wine-and-food",
+    "date": "2024-09-25",
+    "text": "Portuguese wine in Lisbon — incredibly underrated and absurdly cheap. A glass of excellent wine at a tasca is €2-3. Regions to know: Alentejo (rich reds), Douro (the port wine region but also great table wines), Vinho Verde (light, slightly fizzy whites perfect for summer). Wine bars: By the Wine in Chiado is José Maria da Fonseca's wine bar — excellent flights. Garrafeira Nacional has been selling wine since 1927 — incredible selection. Taberna Portuguesa in Alfama has a great wine list with petiscos. For port wine, try at one of the many bars or buy at any supermarket — a great 10-year tawny is €8-12 at Continente/Pingo Doce."
+  },
+  {
+    "id": "lis-food-05",
+    "city": "lisbon",
+    "category": "food",
+    "source_type": "reddit",
+    "source_url": "https://reddit.com/r/Lisbon/comments/ccc555/vegetarian",
+    "date": "2024-08-18",
+    "text": "Vegetarian in Lisbon — getting much easier. The Food Temple in Mouraria does an incredible daily set menu that's vegetarian/vegan — creative, flavorful, around €12 for a full meal. Ao 26 Vegan Food Project in Bairro Alto has creative plant-based dishes that even meat-eaters love. Organi Chiado does health-conscious food with lots of vegetarian options. PSI in Alcântara is in a beautiful garden setting with vegetarian Portuguese food. For traditional restaurants, ask for 'sem carne' (without meat) — many can adapt dishes. The açorda de marisco (bread soup) without shellfish is still delicious with vegetables."
+  },
+  {
+    "id": "lis-nightlife-01",
+    "city": "lisbon",
+    "category": "nightlife",
+    "source_type": "reddit",
+    "source_url": "https://reddit.com/r/Lisbon/comments/ddd666/nightlife_guide",
+    "date": "2024-11-22",
+    "text": "Lisbon nightlife is legendary and starts LATE. Bairro Alto is the classic neighborhood — dozens of tiny bars packed into narrow streets, people drink outside and bar-hop. It gets noisy and messy but it's a great time. Pink Street (Rua Nova do Carvalho) in Cais do Sodré is the current hotspot — Pensão Amor is a former brothel turned stunning bar, Sol e Pesca is a canned-fish bar that's cooler than it sounds. For clubs: Lux Frágil co-owned by John Malkovich is THE club — amazing terrace over the river, great electronic music. Ministerium do Sono is underground techno. Village Underground has varied programming."
+  },
+  {
+    "id": "lis-nightlife-02",
+    "city": "lisbon",
+    "category": "nightlife",
+    "source_type": "blog",
+    "source_url": "https://lisbonlux.com/nightlife-areas",
+    "date": "2024-10-12",
+    "text": "Lisbon nightlife by area: Bairro Alto — the original party neighborhood, hundreds of tiny bars, very casual, drinks on the street, gets loud after 11pm. Cais do Sodré/Pink Street — trendier, cocktail bars and clubs, slightly more upscale. Santos — the after-hours neighborhood, clubs here go until 8am+. Alcântara — warehouse clubs and LX Factory area. For rooftop bars: TOPO in Martim Moniz has the best panoramic views, Park Bar on top of a parking garage in Bairro Alto is iconic. Lost In Esplanada at LX Factory has great sunset vibes. Tip: pre-drink at a supermarket or tasca first — clubs charge €10-15 at the door (includes 1-2 drinks)."
+  },
+  {
+    "id": "lis-nightlife-03",
+    "city": "lisbon",
+    "category": "nightlife",
+    "source_type": "reddit",
+    "source_url": "https://reddit.com/r/Lisbon/comments/eee777/fado",
+    "date": "2024-09-08",
+    "text": "Fado in Lisbon — this is THE cultural experience. Skip the expensive fado houses in Alfama that charge €50+ cover. Instead: Tasca do Chico in Bairro Alto has authentic fado vadio (amateur fado) where locals get up and sing — arrive early, tiny space, drinks are cheap. Mesa de Frades in Alfama is a former chapel with incredible acoustics and top-tier fadistas. Clube de Fado in Alfama is more formal but world-class performers. For free fado: some tascas in Mouraria and Alfama have spontaneous fado on weekend nights. The emotion is real — fado is about saudade (a deep longing), and hearing it live in a small room is genuinely moving."
+  },
+  {
+    "id": "lis-culture-01",
+    "city": "lisbon",
+    "category": "culture",
+    "source_type": "blog",
+    "source_url": "https://culturetrip.com/europe/portugal/lisbon-art-guide",
+    "date": "2024-11-14",
+    "text": "Lisbon art and culture guide: The Museu Nacional de Arte Antiga (MNAA) has one of Europe's best collections of 15th-17th century art — the Bosch triptych is incredible. MAAT (Museum of Art, Architecture and Technology) on the riverfront has a stunning building and contemporary exhibitions. Museu do Oriente showcases Portugal's Asian connections — fascinating and unique. The National Tile Museum (Museu Nacional do Azulejo) is a must — housed in a former convent, it traces the history of azulejos (painted tiles) which are EVERYWHERE in Lisbon. The Berardo Collection at CCB in Belém has excellent modern art — and it's free."
+  },
+  {
+    "id": "lis-culture-02",
+    "city": "lisbon",
+    "category": "culture",
+    "source_type": "reddit",
+    "source_url": "https://reddit.com/r/Lisbon/comments/fff888/hidden_spots",
+    "date": "2024-10-25",
+    "text": "Hidden cultural gems in Lisbon: The Aqueduto das Águas Livres — you can walk along the top of this 18th-century aqueduct across the Alcântara valley, incredible views and vertigo-inducing height, and almost no one does it. The Cemitério dos Prazeres has beautiful mausoleums and views — sounds morbid but it's genuinely peaceful and artistic. Palácio dos Marqueses da Fronteira in Benfica has the best azulejo work in the country — a hidden palace with stunning gardens. The elevador de Santa Justa is beautiful but skip the tourist line — walk up to the Convento do Carmo instead and access the viewing platform from the top for free."
+  },
+  {
+    "id": "lis-culture-03",
+    "city": "lisbon",
+    "category": "culture",
+    "source_type": "local_tip",
+    "source_url": "https://lisbonculture.com/azulejo-walks",
+    "date": "2024-08-30",
+    "text": "Azulejo (tile) walking tours in Lisbon: The city is an open-air museum of decorative tiles. Self-guided route: Start at Fronteira Palace (best azulejos in Portugal), take the metro to São Sebastião station (stunning modern tiles), walk through Alfama looking at building facades, visit the National Tile Museum, end at the Fábrica Sant'Anna tile workshop in Chiado where you can watch artisans hand-paint tiles using centuries-old techniques. The Lisbon metro system itself is a tile museum — each station was designed by a different artist. Don't miss Olaias, Oriente, and Parque stations. You can buy authentic hand-painted tiles at workshops for €15-30 each."
+  },
+  {
+    "id": "lis-neighborhoods-01",
+    "city": "lisbon",
+    "category": "neighborhoods",
+    "source_type": "reddit",
+    "source_url": "https://reddit.com/r/Lisbon/comments/ggg999/neighborhoods",
+    "date": "2024-12-01",
+    "text": "Lisbon neighborhood guide: Alfama is the oldest neighborhood — winding medieval streets, fado music, viewpoints (miradouros), very touristy but magical. Baixa is the flat downtown grid — rebuilt after the 1755 earthquake, grand plazas. Chiado/Bairro Alto — adjacent neighborhoods, Chiado is elegant shopping and cafés, Bairro Alto is nightlife central. Príncipe Real — the trendy/upscale neighborhood with beautiful gardens, boutiques, and brunch spots. Graça — hilltop neighborhood with the best miradouro (viewpoint), local vibe, traditional tascas. Mouraria — the most multicultural neighborhood, birthplace of fado, amazing cheap food from Mozambican to Indian."
+  },
+  {
+    "id": "lis-neighborhoods-02",
+    "city": "lisbon",
+    "category": "neighborhoods",
+    "source_type": "blog",
+    "source_url": "https://remoteyear.com/lisbon-neighborhoods",
+    "date": "2024-09-20",
+    "text": "Living in Lisbon — neighborhood comparison: Príncipe Real is the 'it' neighborhood for young professionals — beautiful, central, great restaurants, but increasingly expensive (€800-1200/month for a 1BR). Graça and Penha de França offer similar charm at lower prices (€600-900) with more local character. Marvila is the emerging neighborhood — former industrial area now full of breweries, galleries, and creative spaces, like Lisbon's Brooklyn. Santos and Estrela are residential but walkable to everything. Belém is beautiful for visits but too far from the center for living. The tram 28 is charming but PACKED with tourists — locals take buses and metro."
+  },
+  {
+    "id": "lis-fitness-01",
+    "city": "lisbon",
+    "category": "fitness",
+    "source_type": "reddit",
+    "source_url": "https://reddit.com/r/Lisbon/comments/hhh000/running_fitness",
+    "date": "2024-11-10",
+    "text": "Fitness in Lisbon — warning: this city is HILLY. Running: the best flat route is along the riverfront from Cais do Sodré to Belém (about 6km one way), passing MAAT and the Jerónimos monastery. For trail running, Monsanto Forest Park is an urban forest with trails ranging from easy to technical — entrance near Parque Florestal. Gyms: Fitness Hut is the value chain, Holmes Place is premium. Both offer day passes. Surfing: Lisbon is one of the only European capitals where you can surf — Costa da Caparica across the bridge has consistent waves, or take the train to Cascais/Guincho for better surf. CrossFit Alfama welcomes drop-ins."
+  },
+  {
+    "id": "lis-fitness-02",
+    "city": "lisbon",
+    "category": "fitness",
+    "source_type": "local_tip",
+    "source_url": "https://lisbonfit.com/outdoor-activities",
+    "date": "2024-10-05",
+    "text": "Outdoor activities around Lisbon: Sintra (40 min by train) has incredible hiking through misty forests past fairy-tale palaces — the Sintra-Cascais Natural Park trail from Sintra to Cabo da Roca (westernmost point of continental Europe) is unforgettable. Arrábida Natural Park (45 min drive south) has hidden coves with crystal-clear water and hiking along limestone cliffs. Kayaking on the Tagus from Belém is magical at sunset. Stand-up paddleboard at Costa da Caparica is popular. For cycling: the Lisbon-Cascais coastal bike path is flat and scenic (about 30km). E-bike rentals are widely available given the hills."
+  },
+  {
+    "id": "lis-nightlife-04",
+    "city": "lisbon",
+    "category": "nightlife",
+    "source_type": "reddit",
+    "source_url": "https://reddit.com/r/Lisbon/comments/iii111/craft_cocktails",
+    "date": "2024-09-28",
+    "text": "Craft cocktail scene in Lisbon: Red Frog Speakeasy in Bairro Alto — ring the doorbell, no sign, incredible cocktails in a dark intimate space. Consistently ranked among Europe's best bars. Cinco Lounge in Príncipe Real does creative cocktails in a beautiful townhouse — their bartender is a multiple award winner. Monkey Mash near Cais do Sodré does tiki cocktails in a fun tropical setting. For wine bars: Wines of Portugal tasting room in Praça do Comércio lets you try wines from every region via self-serve machines. BA Wine Bar in Chiado has an excellent selection by the glass. Cocktails average €10-14, wine by glass €4-7."
+  },
+  {
+    "id": "lis-food-06",
+    "city": "lisbon",
+    "category": "food",
+    "source_type": "reddit",
+    "source_url": "https://reddit.com/r/Lisbon/comments/jjj222/markets_food_halls",
+    "date": "2024-10-15",
+    "text": "Food markets and halls in Lisbon: Time Out Market is the famous one — curated stalls from top chefs like Henrique Sá Pessoa and Alexandre Silva. It's touristy and a bit pricey but the food quality is genuinely high. For a more local experience: Mercado da Ribeira (the traditional market section, same building, opposite side from Time Out) has amazing fresh fish, produce, and flowers. Mercado de Arroios is the real-deal local market — cheap, diverse (reflects the neighborhood's multiculturalism). LX Factory in Alcântara has restaurants and food stalls in a converted industrial complex — go on Sunday for the market with vintage and artisan goods."
+  },
+  {
+    "id": "lis-culture-04",
+    "city": "lisbon",
+    "category": "culture",
+    "source_type": "reddit",
+    "source_url": "https://reddit.com/r/Lisbon/comments/kkk333/miradouros",
+    "date": "2024-11-02",
+    "text": "Lisbon miradouros (viewpoints) ranked: 1) Miradouro da Graça — best overall view, sunset facing, local vibe with a kiosk bar. 2) Miradouro da Senhora do Monte — highest viewpoint, 360° views, less crowded. 3) Miradouro de Santa Luzia — in Alfama, beautiful azulejo walls, romantic. 4) Miradouro de São Pedro de Alcântara — in Bairro Alto, wide view of the castle, great for pre-drinks. 5) Miradouro das Portas do Sol — next to Santa Luzia, more open space. Pro tip: bring a bottle of wine from a supermarket (€3-5 for a decent bottle) and sunset-watch like a local. Most miradouros have a kiosk with beer and snacks."
+  },
+  {
+    "id": "lis-neighborhoods-03",
+    "city": "lisbon",
+    "category": "neighborhoods",
+    "source_type": "reddit",
+    "source_url": "https://reddit.com/r/digitalnomads/comments/lisbon_nomad",
+    "date": "2024-11-25",
+    "text": "Digital nomad guide to Lisbon: Portugal's D7 visa makes it easy to stay long-term. Cost of living: €1200-1800/month is comfortable. Coworking: Outsite in Cais do Sodré has a beautiful space with community events. Second Home is architecturally stunning. Factory Lisbon in Santos is huge and has a pool. Wifi is generally excellent — Portugal has great fiber infrastructure. Cafés are less laptop-friendly than in other nomad cities, use coworking or specialty coffee shops. Best neighborhoods for nomads: Príncipe Real, Santos, Arroios. The NIF (tax ID) is the first thing you need — get it at Finanças. Weather is amazing: 300 days of sunshine, mild winters, hot summers."
+  },
+  {
+    "id": "lis-food-07",
+    "city": "lisbon",
+    "category": "food",
+    "source_type": "blog",
+    "source_url": "https://lisbonfoodie.com/bakeries-pastries",
+    "date": "2024-08-25",
+    "text": "Lisbon pastry guide beyond pastéis de nata: Every pastelaria has incredible baked goods. Must-try: Travesseiros from Piriquita in Sintra — almond and egg cream puff pastry pillows. Bola de Berlim (Portuguese cream-filled doughnut) — get them at any beach town, best fresh and warm. Queijadas de Sintra — tiny cheese-and-cinnamon tarts from Sintra. In Lisbon: Manteigaria in Chiado makes natas in front of you — arguably better than Belém's and no line. Landeau Chocolate in LX Factory does possibly the best chocolate cake in Portugal. Confeitaria Nacional on Praça da Figueira has been baking since 1829 — try their bolo-rei during Christmas season."
+  }
+]

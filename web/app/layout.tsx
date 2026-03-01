@@ -13,9 +13,9 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Email RAG – Semantic Search & Analysis",
+  title: "CityScout — Personalized City Guides",
   description:
-    "Ask questions about your email corpus using Retrieval-Augmented Generation",
+    "Discover any city through your unique lens. Personalized recommendations powered by RAG.",
 };
 
 export default function RootLayout({

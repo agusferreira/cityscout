@@ -1,0 +1,209 @@
+[
+  {
+    "id": "bcn-coffee-01",
+    "city": "barcelona",
+    "category": "coffee",
+    "source_type": "reddit",
+    "source_url": "https://reddit.com/r/Barcelona/comments/aaa111/specialty_coffee",
+    "date": "2024-11-20",
+    "text": "Specialty coffee in Barcelona has exploded. Satan's Coffee Corner in the Gothic Quarter is the OG — tiny space, incredible espresso, zero pretension. They roast their own beans and the baristas are serious about extraction. Nomad Coffee on Passatge Sert is another essential — beautiful space, great pour-overs, they host regular cuppings. Three Marks Coffee near Plaça Urquinaona is newer but already one of the best — light roasts, V60s, and amazing pastries from a local baker. Expect to pay €3-4 for a filter coffee, €2.50-3 for espresso."
+  },
+  {
+    "id": "bcn-coffee-02",
+    "city": "barcelona",
+    "category": "coffee",
+    "source_type": "blog",
+    "source_url": "https://europeanbestdestinations.com/barcelona-coffee-guide",
+    "date": "2024-10-15",
+    "text": "Barcelona coffee guide beyond the basics: SlowMov in Poblenou is the temple of slow coffee — they focus on Chemex and Aeropress methods with single-origin beans. The space is beautiful, industrial-meets-cozy. Café Federal in Sant Antoni pioneered the brunch-and-coffee scene — Australian-style flat whites done right. Right Side Coffee in Eixample has a minimalist design approach and does excellent batch brew. For a unique experience, Nømad Roasters has a roastery-café in Poblenou where you can watch them roast while drinking freshly roasted coffee. Most specialty shops close by 6pm — Barcelona's coffee culture is very much a daytime thing."
+  },
+  {
+    "id": "bcn-coffee-03",
+    "city": "barcelona",
+    "category": "coffee",
+    "source_type": "reddit",
+    "source_url": "https://reddit.com/r/Barcelona/comments/bbb222/cafe_laptop",
+    "date": "2024-09-10",
+    "text": "Best cafés for working with a laptop in Barcelona: Skye Coffee Co. in Gràcia has great wifi and doesn't mind you camping out. Hidden Pearl in Raval is a cozy spot with reliable internet and good cortados. Onna Coffee in Eixample is spacious enough that you won't feel guilty taking a table. Most specialty coffee shops are laptop-friendly on weekdays but some ban laptops on weekends — ask first. Tip: look for spots with power outlets, not all old-building cafés have them conveniently placed."
+  },
+  {
+    "id": "bcn-food-01",
+    "city": "barcelona",
+    "category": "food",
+    "source_type": "reddit",
+    "source_url": "https://reddit.com/r/Barcelona/comments/ccc333/local_food",
+    "date": "2024-12-05",
+    "text": "Skip La Rambla restaurants — tourist traps with bad food. For authentic Catalan cuisine: Can Culleretes in the Gothic Quarter is the second-oldest restaurant in Spain (since 1786), great escalivada and botifarra sausage. Cal Pep near the Barceloneta is legendary for seafood tapas — sit at the bar, let them choose for you. For the best patatas bravas in the city, Bar Tomás in Sarrià is the undisputed champion — crispy potatoes with spicy sauce, people line up for them. Set lunch menus (menú del día) at local restaurants are insane value: 3 courses + bread + drink for €12-15."
+  },
+  {
+    "id": "bcn-food-02",
+    "city": "barcelona",
+    "category": "food",
+    "source_type": "blog",
+    "source_url": "https://theguardian.com/travel/barcelona-food-markets",
+    "date": "2024-11-01",
+    "text": "Barcelona's food markets are a feast: La Boquería on La Rambla is famous but incredibly touristy and overpriced for the counter restaurants. Go early (before 10am) to see the real market in action and buy fruit and jamón at reasonable prices. Better bets: Mercat de Sant Antoni just reopened after renovation — stunning building, more locals, great produce. Mercat de l'Abaceria in Gràcia is purely local — no tourists, wonderful cheese and charcuterie stalls. Mercat de Santa Caterina near the Born has a beautiful wavy colored roof by Miralles and excellent food stalls. For a real local experience, buy ingredients at the market and cook."
+  },
+  {
+    "id": "bcn-food-03",
+    "city": "barcelona",
+    "category": "food",
+    "source_type": "reddit",
+    "source_url": "https://reddit.com/r/Barcelona/comments/ddd444/tapas_guide",
+    "date": "2024-10-25",
+    "text": "Tapas guide for Barcelona: First, know that Barcelona isn't really a 'free tapas with drinks' city (that's more a southern Spain thing). Here you order and pay for your plates. Best tapas bars: Bar Cañete on Carrer de la Unió has impeccable seafood tapas — razor clams, octopus, croquetas. Cervecería Catalana in Eixample has a huge selection and locals go there, not just tourists. Bodega 1900 is one of Albert Adrià's more casual spots — classic vermouth bar with creative tapas. For pintxos (Basque-style), Euskal Etxea in the Born is a fun spot to grab bites from the bar counter."
+  },
+  {
+    "id": "bcn-food-04",
+    "city": "barcelona",
+    "category": "food",
+    "source_type": "local_tip",
+    "source_url": "https://barcelonafoodexperiences.com/seafood-guide",
+    "date": "2024-09-20",
+    "text": "Seafood in Barcelona — the city is right on the Mediterranean so fresh fish is incredible. La Mar Salada near Barceloneta does a perfect arroz negro (black squid ink rice) and fideuà (like paella but with short pasta). Can Solé in Barceloneta has been serving seafood since 1903 — their suquet de peix (fish stew) is legendary. For the adventurous: eat at Barceloneta beach's chiringuitos (beach bars) — overpriced but the vibes with fresh seafood overlooking the sea can't be beat. On Fridays, the Peix al Llotja market in Poblenou has catches straight off the boats."
+  },
+  {
+    "id": "bcn-food-05",
+    "city": "barcelona",
+    "category": "food",
+    "source_type": "reddit",
+    "source_url": "https://reddit.com/r/Barcelona/comments/eee555/cheap_eats",
+    "date": "2024-08-20",
+    "text": "Cheap eats in Barcelona: Bo de B near the Born does the best bocadillos (sandwiches) in the city — huge, stuffed, like €5-6. Cervecería Catalana has a lunch deal that's unbeatable for the quality. Conesa in Plaça Sant Jaume does traditional entrepans (Catalan sandwiches). For late night: kebab shops in Raval are solid, and Bar Kiosko on Rambla del Raval does great burgers until late. Supermarket tip: Mercadona and BonÀrea have excellent prepared foods and rotisserie chicken. Average dinner at a local restaurant: €15-25 per person with wine."
+  },
+  {
+    "id": "bcn-nightlife-01",
+    "city": "barcelona",
+    "category": "nightlife",
+    "source_type": "reddit",
+    "source_url": "https://reddit.com/r/Barcelona/comments/fff666/nightlife_tips",
+    "date": "2024-11-28",
+    "text": "Barcelona nightlife guide: The city doesn't really start going out until midnight. Razzmatazz in Poblenou is the mega-club — 5 rooms with different music. Sala Apolo in Poble Sec has excellent electronic and indie nights — Nasty Mondays (indie) and Nitsa (techno) are legendary. Moog near the Rambla is a small but iconic techno club. For rooftop drinks: Terraza at Hotel Brummell in Poble Sec, or The Roof at Hotel Almanac in the Gothic. Cocktails: Paradiso in Born is a speakeasy consistently ranked among the world's best bars — entrance through a pastrami shop fridge door. Dry Martini is the classic cocktail institution."
+  },
+  {
+    "id": "bcn-nightlife-02",
+    "city": "barcelona",
+    "category": "nightlife",
+    "source_type": "blog",
+    "source_url": "https://timeout.com/barcelona/nightlife-guide",
+    "date": "2024-10-05",
+    "text": "Barcelona bar crawl by neighborhood: Born — start at El Born Bar for vermouth, then Collage Cocktail Bar for creative drinks. Raval — Bar Marsella (absinthe bar since 1820) then Betty Ford's for a dive bar vibe. Gràcia — start at Bodega Cal Pep for cheap wine, then Elephanta for natural wines and vinyl. Poble Sec — Carrer Blai has a string of pintxos bars, end at Bar Calders. For live music: Jamboree in Plaça Reial has jazz nightly, Sidecar has rock and indie. Beware of pickpockets at night in tourist areas — keep your phone in front pockets."
+  },
+  {
+    "id": "bcn-nightlife-03",
+    "city": "barcelona",
+    "category": "nightlife",
+    "source_type": "reddit",
+    "source_url": "https://reddit.com/r/Barcelona/comments/ggg777/craft_beer",
+    "date": "2024-09-15",
+    "text": "Craft beer in Barcelona: BierCab in Eixample has 30 taps of Spanish and international craft beers — best selection in the city. Cerveseria Garage Beer Co. brews on-site in Eixample with a taproom that's always buzzing. NaparBCN in Eixample is from the famous Napar brewery — great food to pair. For something different, La Cervecita Nuestra de Cada Día in Gràcia is a tiny bottle shop with hundreds of craft beers. Most pints are €5-7. The Poblenou neighborhood has several small breweries doing open days on weekends."
+  },
+  {
+    "id": "bcn-culture-01",
+    "city": "barcelona",
+    "category": "culture",
+    "source_type": "blog",
+    "source_url": "https://architecturaldigest.com/barcelona-gaudi-guide",
+    "date": "2024-11-12",
+    "text": "Gaudí in Barcelona — essential guide: La Sagrada Família is overwhelming in person — buy tickets 2-3 weeks ahead, go for a morning slot for the best light through the stained glass. The towers visit is worth the extra cost. Park Güell is beautiful but time-limited in the monumental zone — free access to the park areas outside. Casa Batlló on Passeig de Gràcia is the most immersive experience with their AR guide. Casa Milà (La Pedrera) has excellent rooftop views and night visits with projections. Lesser-known: Palau Güell in Raval is gorgeous and rarely crowded, Colònia Güell crypt outside the city is Gaudí's secret masterpiece — worth the 30-min train ride."
+  },
+  {
+    "id": "bcn-culture-02",
+    "city": "barcelona",
+    "category": "culture",
+    "source_type": "reddit",
+    "source_url": "https://reddit.com/r/Barcelona/comments/hhh888/museums",
+    "date": "2024-10-28",
+    "text": "Best museums in Barcelona beyond Gaudí: Museu Picasso in the Born — Picasso lived in Barcelona as a teenager and the collection shows his early development, housed in five medieval palaces. First Sunday of the month is free. Fundació Joan Miró on Montjuïc is spectacular — great building by Sert, incredible collection, amazing views. MACBA (contemporary art) in Raval is in a Richard Meier building — the plaza out front is where skaters gather, great vibe. CCCB next door has excellent photography and urban culture exhibitions. CaixaForum in a former Modernista factory has great visiting exhibitions."
+  },
+  {
+    "id": "bcn-culture-03",
+    "city": "barcelona",
+    "category": "culture",
+    "source_type": "local_tip",
+    "source_url": "https://barcelonaculture.com/hidden-gems",
+    "date": "2024-08-25",
+    "text": "Hidden cultural gems in Barcelona: The Hospital de Sant Pau is a UNESCO site that most tourists skip — a Modernista hospital complex by Domènech i Montaner that rivals Gaudí's work. The Palau de la Música Catalana is the most beautiful concert hall in Europe — take the guided tour AND see a concert. Sant Pau del Camp in Raval is a tiny 10th-century Romanesque church that feels like a time portal. The bunkers of El Carmel (Turó de la Rovira) are WWII anti-aircraft positions with the best panoramic views of the city — locals' sunset spot, bring wine. The Labyrinth Park in Horta is a beautiful 18th-century hedge maze that tourists never find."
+  },
+  {
+    "id": "bcn-neighborhoods-01",
+    "city": "barcelona",
+    "category": "neighborhoods",
+    "source_type": "reddit",
+    "source_url": "https://reddit.com/r/Barcelona/comments/iii999/where_to_stay",
+    "date": "2024-12-08",
+    "text": "Where to stay in Barcelona: Gothic Quarter is central and atmospheric but can be noisy and touristy. Born/El Born is the sweet spot — beautiful medieval streets, great restaurants, close to the beach. Eixample has wide streets, Modernista architecture, and the best restaurant density. Gràcia feels like a village within the city — plazas with local life, independent shops, less touristy. Poble Sec is up-and-coming with great food scene (Carrer Blai!). Poblenou is the creative/tech district — former industrial area now full of design studios and coffee shops. Raval is edgy and diverse — great food, some streets feel sketchy at night."
+  },
+  {
+    "id": "bcn-neighborhoods-02",
+    "city": "barcelona",
+    "category": "neighborhoods",
+    "source_type": "blog",
+    "source_url": "https://nomadicmatt.com/barcelona-neighborhoods",
+    "date": "2024-09-30",
+    "text": "Living in Barcelona — neighborhood guide: If you're working remotely, Poblenou is ideal — lots of coworking spaces (MOB, Betahaus), good cafés, beach nearby. Gràcia is the bohemian heart — plazas full of life, independent shops, cinema, and a strong neighborhood identity. Sant Antoni has become the foodie neighborhood — the renovated market is stunning and the streets around it are full of new restaurants and bars. Horta and Sarrià are quiet residential neighborhoods with a small-town feel — great if you want peace and access to Collserola hills for hiking. Metro is excellent, you can live anywhere and get around easily."
+  },
+  {
+    "id": "bcn-fitness-01",
+    "city": "barcelona",
+    "category": "fitness",
+    "source_type": "reddit",
+    "source_url": "https://reddit.com/r/Barcelona/comments/jjj000/fitness_running",
+    "date": "2024-11-05",
+    "text": "Fitness in Barcelona: Running along the Barceloneta beach promenade is iconic — flat, scenic, goes from W Hotel all the way to Fòrum (about 5km one way). For trails, Collserola Natural Park has incredible single-track trails with views of the city — access from Vallvidrera FGC station. Montjuïc has a running loop past the Olympic stadium with views of the port. DIR is the main gym chain — clean, well-equipped, day passes around €15. For yoga: Yogalava in Gràcia and Yoga One in Born both offer drop-in classes. The outdoor gym equipment along the beach is free and surprisingly good quality."
+  },
+  {
+    "id": "bcn-fitness-02",
+    "city": "barcelona",
+    "category": "fitness",
+    "source_type": "local_tip",
+    "source_url": "https://barcelonaactive.com/outdoor-sports",
+    "date": "2024-10-01",
+    "text": "Outdoor activities in and around Barcelona: Kayaking along the coast from Barceloneta gives you amazing views of the skyline from the water. Paddleboard rentals are available on the beach (€15/hour). For serious hiking, Montserrat mountain is a 1-hour train ride — the monastery is famous but the hiking trails are the real reward, with bizarre rock formations. In summer, Sitges (30 min by train) has better beaches than Barcelona. Climbing: La Foixarda near Montjuïc has outdoor climbing walls. Cycling: the seafront bike path is great, and serious cyclists ride up to Tibidabo or Collserola."
+  },
+  {
+    "id": "bcn-food-06",
+    "city": "barcelona",
+    "category": "food",
+    "source_type": "reddit",
+    "source_url": "https://reddit.com/r/Barcelona/comments/kkk111/brunch",
+    "date": "2024-10-30",
+    "text": "Brunch in Barcelona: Federal Café in Sant Antoni is the institution — Australian-style brunch with excellent eggs, avocado toast, and flat whites. Flax & Kale in Eixample does a healthy brunch with creative vegetarian options — their flexitarian menu is huge. The Benedict in various locations does eggs benny in every possible variation. Brunch & Cake in Born is Instagram-famous for a reason — gorgeous presentations and creative dishes. Weekend brunch is a BIG thing in Barcelona but expect waits at popular spots after 11am. Reservations recommended. Budget: €15-25 per person."
+  },
+  {
+    "id": "bcn-culture-04",
+    "city": "barcelona",
+    "category": "culture",
+    "source_type": "reddit",
+    "source_url": "https://reddit.com/r/Barcelona/comments/lll222/free_things",
+    "date": "2024-09-22",
+    "text": "Free things to do in Barcelona: Walk the Gothic Quarter and get lost in medieval streets. Watch street performers at Plaça Reial. Free museum days: first Sunday of month (Picasso, MNAC, many others). The Magic Fountain of Montjuïc has free light shows on weekend evenings (check schedule). Bunkers del Carmel for sunset — the best free viewpoint in the city. Walk along the breakwater to the lighthouse at Port Olímpic. Park de la Ciutadella is beautiful for a stroll. Beach is free obviously. Sunday morning: browse the second-hand book market at Mercat de Sant Antoni. Street art in Poblenou is world-class."
+  },
+  {
+    "id": "bcn-nightlife-04",
+    "city": "barcelona",
+    "category": "nightlife",
+    "source_type": "local_tip",
+    "source_url": "https://barcelonanight.com/wine-vermouth",
+    "date": "2024-08-30",
+    "text": "Vermouth culture in Barcelona: L'hora del vermut (vermouth hour) is a sacred pre-lunch tradition, usually around 12-2pm on weekends. Bar Calders in Sant Antoni is ground zero for the vermouth revival — vermut de grifo (draft vermouth) with olives and chips. Bodega Maestrazgo in Sant Pere is an old-school bodega where locals stand at the counter with vermut and conservas (tinned seafood). Morro Fi in Eixample does excellent artisanal vermouth. The tradition: order a vermut, some olives or anchovies, chat with friends, then go for a long lunch. It's the most Catalan thing you can do."
+  },
+  {
+    "id": "bcn-neighborhoods-03",
+    "city": "barcelona",
+    "category": "neighborhoods",
+    "source_type": "reddit",
+    "source_url": "https://reddit.com/r/digitalnomads/comments/bcn_nomad",
+    "date": "2024-11-15",
+    "text": "Digital nomad life in Barcelona: Great city but expensive for Spain. Budget €1500-2000/month minimum for a decent life. Coworking: MOB in Poblenou is the nomad favorite — events, community, €200/month. Betahaus is bigger and more corporate. OneCoWork in Born is premium. Cafés with good wifi: most specialty coffee shops are fine for a few hours. Biggest issue: getting an apartment — housing crisis is real, expect to search 2-4 weeks. NIE (foreigner ID number) is essential for any bureaucracy. Timezone is CET, good for European clients. The lifestyle is unbeatable: beach, culture, food, and you can work outdoors most of the year."
+  },
+  {
+    "id": "bcn-food-07",
+    "city": "barcelona",
+    "category": "food",
+    "source_type": "blog",
+    "source_url": "https://bonappetit.com/barcelona-new-restaurants-2024",
+    "date": "2024-11-08",
+    "text": "Barcelona's new restaurant scene in 2024: The city continues to attract innovative chefs. Disfrutar (2 Michelin stars) is regularly ranked among the world's best restaurants — their tasting menu is creative molecular gastronomy at €220. At the other end, Cañete on Carrer de la Unió is packed nightly for their seafood counter — no reservations, just queue. Compartir (from the ex-El Bulli team) does beautiful shared plates in a stunning space. For natural wine and small plates: Bar Brutal in Born and Can Cisa / Bar Brutal are the spots. The vermouth-and-tapas scene in Sant Antoni keeps growing with new openings monthly."
+  }
+]
