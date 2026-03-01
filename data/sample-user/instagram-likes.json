@@ -1,0 +1,159 @@
+{
+  "export_info": {
+    "source": "instagram",
+    "type": "liked_posts",
+    "exported_at": "2025-01-15T10:30:00Z"
+  },
+  "likes_media_likes": [
+    {
+      "title": "",
+      "string_list_data": [
+        {
+          "href": "https://www.instagram.com/p/ABC123",
+          "value": "Stunning latte art at this tiny roaster in Palermo 🇦🇷 #specialtycoffee #buenosaires #latteart #thirdwave",
+          "timestamp": 1705100000
+        }
+      ]
+    },
+    {
+      "title": "",
+      "string_list_data": [
+        {
+          "href": "https://www.instagram.com/p/DEF456",
+          "value": "The most beautiful bookshop in the world — El Ateneo Grand Splendid, Buenos Aires 📚✨ #bookstagram #buenosaires #architecture #elateneo",
+          "timestamp": 1704900000
+        }
+      ]
+    },
+    {
+      "title": "",
+      "string_list_data": [
+        {
+          "href": "https://www.instagram.com/p/GHI789",
+          "value": "Sunset from Miradouro da Graça with a glass of Alentejo red 🍷🌅 #lisbon #portugal #miradouro #sunset #winelovers",
+          "timestamp": 1704700000
+        }
+      ]
+    },
+    {
+      "title": "",
+      "string_list_data": [
+        {
+          "href": "https://www.instagram.com/p/JKL012",
+          "value": "Street art in the Gothic Quarter 🎨 Barcelona never disappoints #streetart #barcelona #urbanart #gothic",
+          "timestamp": 1704500000
+        }
+      ]
+    },
+    {
+      "title": "",
+      "string_list_data": [
+        {
+          "href": "https://www.instagram.com/p/MNO345",
+          "value": "Natural wine flight at this cave bar in San Telmo — every glass a discovery 🍷 #naturalwine #santelmo #winebar #buenosaires",
+          "timestamp": 1704300000
+        }
+      ]
+    },
+    {
+      "title": "",
+      "string_list_data": [
+        {
+          "href": "https://www.instagram.com/p/PQR678",
+          "value": "Pastéis de nata at Manteigaria — watching them bake right in front of you 🥐 #pasteisdenata #lisbon #portuguesefood #pastry",
+          "timestamp": 1704100000
+        }
+      ]
+    },
+    {
+      "title": "",
+      "string_list_data": [
+        {
+          "href": "https://www.instagram.com/p/STU901",
+          "value": "Tango milonga at La Viruta — raw, authentic, unforgettable 💃 #tango #buenosaires #milonga #dance #culture",
+          "timestamp": 1703900000
+        }
+      ]
+    },
+    {
+      "title": "",
+      "string_list_data": [
+        {
+          "href": "https://www.instagram.com/p/VWX234",
+          "value": "The azulejo tile work in Lisbon is an open-air museum 🎨🇵🇹 #azulejos #lisbon #tiles #artiseverywhere #portugal",
+          "timestamp": 1703700000
+        }
+      ]
+    },
+    {
+      "title": "",
+      "string_list_data": [
+        {
+          "href": "https://www.instagram.com/p/YZA567",
+          "value": "Morning run along Barceloneta beach — best way to start the day 🏃‍♂️🌊 #running #barcelona #beach #morningrun #fitness",
+          "timestamp": 1703500000
+        }
+      ]
+    },
+    {
+      "title": "",
+      "string_list_data": [
+        {
+          "href": "https://www.instagram.com/p/BCD890",
+          "value": "Speakeasy cocktail bar hidden behind a flower shop — Florería Atlántico 🌸🍸 #speakeasy #cocktails #buenosaires #hidden #mixology",
+          "timestamp": 1703300000
+        }
+      ]
+    },
+    {
+      "title": "",
+      "string_list_data": [
+        {
+          "href": "https://www.instagram.com/p/EFG123",
+          "value": "La Sagrada Família interior light in the morning is otherworldly 🌈⛪ #gaudi #barcelona #sagradafamilia #architecture #light",
+          "timestamp": 1703100000
+        }
+      ]
+    },
+    {
+      "title": "",
+      "string_list_data": [
+        {
+          "href": "https://www.instagram.com/p/HIJ456",
+          "value": "Fresh percebes at Cervejaria Ramiro — the thing I dream about 🦐 #seafood #lisbon #ramiro #percebes #foodie",
+          "timestamp": 1702900000
+        }
+      ]
+    },
+    {
+      "title": "",
+      "string_list_data": [
+        {
+          "href": "https://www.instagram.com/p/KLM789",
+          "value": "V60 pour-over ceremony at this minimal coffee shop in Eixample ☕️ #v60 #pourover #barcelona #specialtycoffee #minimal",
+          "timestamp": 1702700000
+        }
+      ]
+    },
+    {
+      "title": "",
+      "string_list_data": [
+        {
+          "href": "https://www.instagram.com/p/NOP012",
+          "value": "Choripán from a street cart in Costanera Sur 🌭🇦🇷 Best $2 meal ever #streetfood #buenosaires #choripan #argentina",
+          "timestamp": 1702500000
+        }
+      ]
+    },
+    {
+      "title": "",
+      "string_list_data": [
+        {
+          "href": "https://www.instagram.com/p/QRS345",
+          "value": "Fado night at Tasca do Chico — raw emotion in a tiny room 🎵🇵🇹 #fado #lisbon #livemusic #saudade #authentic",
+          "timestamp": 1702300000
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,171 @@
+{
+  "export_info": {
+    "source": "google_maps",
+    "type": "saved_places",
+    "exported_at": "2025-01-15T10:30:00Z"
+  },
+  "saved_places": [
+    {
+      "name": "Café Tortoni",
+      "type": "cafe",
+      "cuisine": "coffee",
+      "neighborhood": "Monserrat",
+      "rating": 4.2,
+      "price_level": 2,
+      "tags": ["historic", "live_tango", "tourist_classic"]
+    },
+    {
+      "name": "LAB Tostadores de Café",
+      "type": "cafe",
+      "cuisine": "specialty_coffee",
+      "neighborhood": "Chacarita",
+      "rating": 4.7,
+      "price_level": 2,
+      "tags": ["specialty_coffee", "local_roaster", "minimal_design"]
+    },
+    {
+      "name": "Don Julio Parrilla",
+      "type": "restaurant",
+      "cuisine": "argentine_steak",
+      "neighborhood": "Palermo",
+      "rating": 4.6,
+      "price_level": 3,
+      "tags": ["fine_dining", "steak", "wine_list"]
+    },
+    {
+      "name": "El Preferido de Palermo",
+      "type": "restaurant",
+      "cuisine": "argentine_traditional",
+      "neighborhood": "Palermo",
+      "rating": 4.4,
+      "price_level": 2,
+      "tags": ["traditional", "neighborhood_gem", "outdoor_seating"]
+    },
+    {
+      "name": "Gran Dabbang",
+      "type": "restaurant",
+      "cuisine": "asian_fusion",
+      "neighborhood": "Palermo",
+      "rating": 4.5,
+      "price_level": 2,
+      "tags": ["creative_menu", "small_plates", "spicy"]
+    },
+    {
+      "name": "Florería Atlántico",
+      "type": "bar",
+      "cuisine": "cocktails",
+      "neighborhood": "Retiro",
+      "rating": 4.6,
+      "price_level": 3,
+      "tags": ["speakeasy", "cocktail_bar", "hidden_entrance"]
+    },
+    {
+      "name": "Verne Club",
+      "type": "bar",
+      "cuisine": "cocktails",
+      "neighborhood": "Palermo",
+      "rating": 4.5,
+      "price_level": 3,
+      "tags": ["speakeasy", "cocktail_bar", "intimate"]
+    },
+    {
+      "name": "La Catedral Club",
+      "type": "bar",
+      "cuisine": "drinks",
+      "neighborhood": "Almagro",
+      "rating": 4.3,
+      "price_level": 1,
+      "tags": ["tango", "milonga", "bohemian", "live_music"]
+    },
+    {
+      "name": "MALBA",
+      "type": "museum",
+      "cuisine": null,
+      "neighborhood": "Palermo",
+      "rating": 4.5,
+      "price_level": 2,
+      "tags": ["modern_art", "architecture", "bookshop"]
+    },
+    {
+      "name": "El Ateneo Grand Splendid",
+      "type": "bookstore",
+      "cuisine": null,
+      "neighborhood": "Recoleta",
+      "rating": 4.7,
+      "price_level": 1,
+      "tags": ["historic", "architecture", "bookstore", "cafe"]
+    },
+    {
+      "name": "Mercado de San Telmo",
+      "type": "market",
+      "cuisine": "various",
+      "neighborhood": "San Telmo",
+      "rating": 4.4,
+      "price_level": 1,
+      "tags": ["food_market", "antiques", "street_food", "local"]
+    },
+    {
+      "name": "Pain et Vin",
+      "type": "restaurant",
+      "cuisine": "french_bistro",
+      "neighborhood": "Palermo",
+      "rating": 4.5,
+      "price_level": 3,
+      "tags": ["wine_bar", "french", "outdoor_seating", "romantic"]
+    },
+    {
+      "name": "Proper Pizza",
+      "type": "restaurant",
+      "cuisine": "pizza",
+      "neighborhood": "Palermo",
+      "rating": 4.3,
+      "price_level": 2,
+      "tags": ["sourdough", "craft_beer", "casual"]
+    },
+    {
+      "name": "Nómade Wine Bar",
+      "type": "bar",
+      "cuisine": "natural_wine",
+      "neighborhood": "Palermo",
+      "rating": 4.4,
+      "price_level": 2,
+      "tags": ["natural_wine", "small_plates", "intimate"]
+    },
+    {
+      "name": "Thelonious Club",
+      "type": "bar",
+      "cuisine": "drinks",
+      "neighborhood": "San Telmo",
+      "rating": 4.5,
+      "price_level": 2,
+      "tags": ["jazz_club", "live_music", "intimate"]
+    },
+    {
+      "name": "Cementario de la Recoleta",
+      "type": "attraction",
+      "cuisine": null,
+      "neighborhood": "Recoleta",
+      "rating": 4.6,
+      "price_level": 1,
+      "tags": ["historic", "architecture", "photography"]
+    },
+    {
+      "name": "Café de los Angelitos",
+      "type": "cafe",
+      "cuisine": "coffee",
+      "neighborhood": "Balvanera",
+      "rating": 4.1,
+      "price_level": 2,
+      "tags": ["historic", "tango_show", "traditional"]
+    },
+    {
+      "name": "Oui Oui",
+      "type": "cafe",
+      "cuisine": "brunch",
+      "neighborhood": "Palermo",
+      "rating": 4.2,
+      "price_level": 2,
+      "tags": ["brunch", "instagram_worthy", "outdoor_seating"]
+    }
+  ]
+}

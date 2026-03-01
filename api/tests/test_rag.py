@@ -1,6 +1,7 @@
 """
 TDD tests for CityScout RAG pipeline.
-Tests cover: chunking, data loading, profile generation, guide generation, and RAGAS evaluation.
+Tests cover: chunking, data loading, profile generation, guide generation,
+parsers, user data upload, dual-corpus RAG, and RAGAS evaluation.
 """
 
 import json
@@ -31,11 +32,9 @@ class TestChunking:
     def test_long_text_splits(self):
         from server import chunk_text
 
-        # Create a text with 800 words
         text = " ".join(["word"] * 800)
         chunks = chunk_text(text, max_words=400, overlap=50)
         assert len(chunks) > 1
-        # Each chunk should have at most 400 words
         for c in chunks:
             assert len(c.split()) <= 400
 
@@ -45,11 +44,9 @@ class TestChunking:
         words = [f"word{i}" for i in range(100)]
         text = " ".join(words)
         chunks = chunk_text(text, max_words=60, overlap=10)
-        # Chunks should overlap by 10 words
         assert len(chunks) >= 2
         chunk1_words = chunks[0].split()
         chunk2_words = chunks[1].split()
-        # Last 10 words of chunk 1 should be first 10 words of chunk 2
         assert chunk1_words[-10:] == chunk2_words[:10]
 
     def test_empty_text(self):
@@ -70,7 +67,6 @@ class TestCityDataLoading:
 
         chunks = load_city_data("buenos-aires")
         assert len(chunks) > 0
-        # Each chunk should have required fields
         for chunk in chunks:
             assert "id" in chunk
             assert "text" in chunk
@@ -93,7 +89,6 @@ class TestCityDataLoading:
 
         chunks = load_city_data("buenos-aires")
         categories = set(c["metadata"]["category"] for c in chunks)
-        # Should have diverse categories
         assert len(categories) >= 4, f"Only {len(categories)} categories: {categories}"
         print(f"  Categories: {categories}")
 
@@ -123,7 +118,7 @@ class TestAvailableCities:
 
         cities = get_available_cities()
         assert isinstance(cities, list)
-        assert len(cities) >= 3  # We created 3 city files
+        assert len(cities) >= 3
 
     def test_city_has_metadata(self):
         from server import get_available_cities
@@ -154,7 +149,6 @@ class TestProfileGeneration:
 
     @patch("server.openai_client")
     def test_profile_format(self, mock_openai):
-        """Profile should be a non-empty string describing the user."""
         mock_completion = MagicMock()
         mock_completion.choices = [
             MagicMock(
@@ -201,12 +195,9 @@ class TestGuideGeneration:
     @patch("server.pc")
     @patch("server.openai_client")
     def test_guide_has_citations(self, mock_openai, mock_pc):
-        """Generated guide should include source citations."""
-        # Mock embedding
         mock_openai.embeddings.create.return_value = MagicMock(
             data=[MagicMock(embedding=[0.1] * 1536)]
         )
-        # Mock Pinecone query
         mock_match = MagicMock()
         mock_match.id = "ba-coffee-01"
         mock_match.score = 0.92
@@ -222,7 +213,6 @@ class TestGuideGeneration:
         mock_index.query.return_value = MagicMock(matches=[mock_match])
         mock_pc.Index.return_value = mock_index
 
-        # Mock LLM response
         mock_completion = MagicMock()
         mock_completion.choices = [
             MagicMock(
@@ -256,7 +246,6 @@ class TestGuideGeneration:
         assert "sources" in data
         assert "scores" in data
         assert len(data["sources"]) > 0
-        # Guide should contain source reference
         assert "Source" in data["guide"] or "source" in data["guide"].lower()
 
 
@@ -348,9 +337,7 @@ class TestDataQuality:
             data = json.loads(fp.read_text())
             for item in data:
                 text = item.get("text", "")
-                # Text should be substantive
                 assert len(text) >= 100, f"Chunk {item.get('id')} in {fp.stem} too short: {len(text)} chars"
-                # Should contain actual recommendations (place names, etc.)
                 assert len(text.split()) >= 20, f"Chunk {item.get('id')} in {fp.stem} has too few words"
 
     def test_source_types_valid(self):
@@ -373,3 +360,470 @@ class TestDataQuality:
             assert len(categories) >= 4, (
                 f"{fp.stem} has only {len(categories)} categories: {categories}"
             )
+
+
+# ══════════════════════════════════════════════════════════════════════
+# NEW: Multi-source data upload & dual-corpus RAG tests
+# ══════════════════════════════════════════════════════════════════════
+
+
+# ── Test: Parsers ──
+
+
+class TestParsers:
+    """Test each data source parser with sample data."""
+
+    def _load_sample(self, filename: str) -> dict:
+        """Load a sample data file."""
+        sample_dir = Path(__file__).resolve().parent.parent.parent / "data" / "sample-user"
+        fp = sample_dir / filename
+        assert fp.exists(), f"Sample file not found: {fp}"
+        return json.loads(fp.read_text())
+
+    def test_parse_spotify(self):
+        from parsers import parse_spotify
+
+        data = self._load_sample("spotify-history.json")
+        chunks = parse_spotify(data)
+
+        assert len(chunks) >= 3, f"Expected ≥3 chunks, got {len(chunks)}"
+
+        # Check chunk structure
+        for chunk in chunks:
+            assert "text" in chunk
+            assert "metadata" in chunk
+            assert chunk["metadata"]["source_type"] == "spotify"
+            assert chunk["metadata"]["category"] in (
+                "music_taste", "genre_preferences", "mood_energy", "lifestyle_patterns"
+            )
+            assert chunk["metadata"]["signal_type"]
+            assert len(chunk["text"]) > 20
+
+        # Verify specific signals
+        all_text = " ".join(c["text"] for c in chunks)
+        assert "Miles Davis" in all_text or "jazz" in all_text.lower()
+        print(f"  Spotify: {len(chunks)} chunks parsed")
+
+    def test_parse_youtube(self):
+        from parsers import parse_youtube
+
+        data = self._load_sample("youtube-subscriptions.json")
+        chunks = parse_youtube(data)
+
+        assert len(chunks) >= 2, f"Expected ≥2 chunks, got {len(chunks)}"
+
+        for chunk in chunks:
+            assert chunk["metadata"]["source_type"] == "youtube"
+            assert chunk["metadata"]["category"] in (
+                "content_interests", "watch_patterns", "travel_interests"
+            )
+
+        all_text = " ".join(c["text"] for c in chunks)
+        assert "coffee" in all_text.lower() or "food" in all_text.lower() or "travel" in all_text.lower()
+        print(f"  YouTube: {len(chunks)} chunks parsed")
+
+    def test_parse_google_maps(self):
+        from parsers import parse_google_maps
+
+        data = self._load_sample("maps-saved-places.json")
+        chunks = parse_google_maps(data)
+
+        assert len(chunks) >= 3, f"Expected ≥3 chunks, got {len(chunks)}"
+
+        for chunk in chunks:
+            assert chunk["metadata"]["source_type"] == "google_maps"
+            assert chunk["metadata"]["category"] in (
+                "place_preferences", "food_preferences", "neighborhood_vibes",
+                "budget_signals", "venue_features"
+            )
+
+        all_text = " ".join(c["text"] for c in chunks)
+        assert "Palermo" in all_text or "restaurant" in all_text.lower() or "cafe" in all_text.lower()
+        print(f"  Google Maps: {len(chunks)} chunks parsed")
+
+    def test_parse_instagram(self):
+        from parsers import parse_instagram
+
+        # Use inline sample since we don't have a separate file
+        data = {
+            "saved_posts": [
+                {"caption": "Amazing coffee at this hidden gem", "category": "food",
+                 "hashtags": ["coffee", "caffeineaddict", "specialtycoffee"],
+                 "location": "Palermo Soho", "media_type": "image"},
+                {"caption": "Gallery opening tonight", "category": "art",
+                 "hashtags": ["contemporaryart", "gallery", "buenosaires"],
+                 "location": "La Boca", "media_type": "image"},
+                {"caption": "Wine and jazz kind of evening", "category": "nightlife",
+                 "hashtags": ["naturalwine", "jazzbar", "nightout"],
+                 "location": "San Telmo", "media_type": "image"},
+                {"caption": "Architecture walk through Recoleta", "category": "travel",
+                 "hashtags": ["architecture", "design", "travel"],
+                 "location": "Recoleta", "media_type": "image"},
+            ],
+            "liked_posts": [
+                {"caption": "Best street food in the city", "category": "food",
+                 "hashtags": ["streetfood", "foodie"]},
+                {"caption": "Sunset from the rooftop bar", "category": "nightlife",
+                 "hashtags": ["cocktails", "bar", "sunset"]},
+            ],
+        }
+        chunks = parse_instagram(data)
+
+        assert len(chunks) >= 2, f"Expected ≥2 chunks, got {len(chunks)}"
+
+        for chunk in chunks:
+            assert chunk["metadata"]["source_type"] == "instagram"
+            assert chunk["metadata"]["category"] in (
+                "aesthetic_preferences", "interest_signals", "location_preferences",
+                "lifestyle_signals"
+            )
+
+        print(f"  Instagram: {len(chunks)} chunks parsed")
+
+    def test_parser_router(self):
+        from parsers import parse_user_data
+
+        data = {"streaming_history": [], "top_artists": []}
+        chunks = parse_user_data("spotify", data)
+        assert isinstance(chunks, list)
+
+    def test_parser_unknown_source(self):
+        from parsers import parse_user_data
+
+        with pytest.raises(ValueError, match="Unknown source"):
+            parse_user_data("tiktok", {})
+
+    def test_parser_empty_data(self):
+        from parsers import parse_spotify, parse_youtube, parse_google_maps, parse_instagram
+
+        assert parse_spotify({}) == []
+        assert parse_youtube({}) == []
+        assert parse_google_maps({}) == []
+        assert parse_instagram({}) == []
+
+
+# ── Test: User Data Upload Endpoint ──
+
+
+class TestUserDataUpload:
+    """Test the /api/profile/upload endpoint."""
+
+    @patch("server.pc")
+    @patch("server.openai_client")
+    def test_upload_spotify(self, mock_openai, mock_pc):
+        """Test uploading Spotify data."""
+        mock_openai.embeddings.create.return_value = MagicMock(
+            data=[MagicMock(embedding=[0.1] * 1536) for _ in range(10)]
+        )
+        mock_index = MagicMock()
+        mock_pc.Index.return_value = mock_index
+
+        from server import app
+        from fastapi.testclient import TestClient
+
+        client = TestClient(app)
+
+        sample_dir = Path(__file__).resolve().parent.parent.parent / "data" / "sample-user"
+        spotify_data = json.loads((sample_dir / "spotify-history.json").read_text())
+
+        resp = client.post("/api/profile/upload", json={
+            "source": "spotify",
+            "data": spotify_data,
+            "user_id": "test-user-1",
+        })
+
+        assert resp.status_code == 200
+        data = resp.json()
+        assert data["user_id"] == "test-user-1"
+        assert data["source"] == "spotify"
+        assert data["chunks_stored"] > 0
+        assert "signal_types" in data
+        assert "signals" in data
+        print(f"  → Stored {data['chunks_stored']} chunks, types: {data['signal_types']}")
+
+    @patch("server.pc")
+    @patch("server.openai_client")
+    def test_upload_google_maps(self, mock_openai, mock_pc):
+        """Test uploading Google Maps data."""
+        mock_openai.embeddings.create.return_value = MagicMock(
+            data=[MagicMock(embedding=[0.1] * 1536) for _ in range(10)]
+        )
+        mock_index = MagicMock()
+        mock_pc.Index.return_value = mock_index
+
+        from server import app
+        from fastapi.testclient import TestClient
+
+        client = TestClient(app)
+
+        sample_dir = Path(__file__).resolve().parent.parent.parent / "data" / "sample-user"
+        maps_data = json.loads((sample_dir / "maps-saved-places.json").read_text())
+
+        resp = client.post("/api/profile/upload", json={
+            "source": "google_maps",
+            "data": maps_data,
+            "user_id": "test-user-2",
+        })
+
+        assert resp.status_code == 200
+        data = resp.json()
+        assert data["source"] == "google_maps"
+        assert data["chunks_stored"] > 0
+
+    def test_upload_invalid_source(self):
+        from server import app
+        from fastapi.testclient import TestClient
+
+        client = TestClient(app)
+        resp = client.post("/api/profile/upload", json={
+            "source": "tiktok",
+            "data": {},
+        })
+        assert resp.status_code == 400
+        assert "Unknown source" in resp.json()["detail"]
+
+    @patch("server.pc")
+    @patch("server.openai_client")
+    def test_upload_generates_user_id(self, mock_openai, mock_pc):
+        """Test that user_id is auto-generated when not provided."""
+        mock_openai.embeddings.create.return_value = MagicMock(
+            data=[MagicMock(embedding=[0.1] * 1536) for _ in range(10)]
+        )
+        mock_index = MagicMock()
+        mock_pc.Index.return_value = mock_index
+
+        from server import app
+        from fastapi.testclient import TestClient
+
+        client = TestClient(app)
+        resp = client.post("/api/profile/upload", json={
+            "source": "spotify",
+            "data": {
+                "streaming_history": [
+                    {"master_metadata_album_artist_name": "Test Artist",
+                     "master_metadata_track_name": "Test Song",
+                     "ms_played": 180000}
+                ],
+                "top_artists": [{"name": "Test Artist", "genres": ["rock"]}],
+            },
+        })
+
+        assert resp.status_code == 200
+        data = resp.json()
+        assert "user_id" in data
+        assert len(data["user_id"]) > 0
+
+
+# ── Test: Dual-Corpus RAG ──
+
+
+class TestDualCorpusRAG:
+    """Test that guide generation uses both city and user corpora."""
+
+    @patch("server.pc")
+    @patch("server.openai_client")
+    def test_guide_with_user_id(self, mock_openai, mock_pc):
+        """Test guide generation with user data (dual-corpus)."""
+        mock_openai.embeddings.create.return_value = MagicMock(
+            data=[MagicMock(embedding=[0.1] * 1536)]
+        )
+
+        # City match
+        city_match = MagicMock()
+        city_match.id = "ba-coffee-01"
+        city_match.score = 0.92
+        city_match.metadata = {
+            "text": "LAB Tostadores in Chacarita serves specialty coffee.",
+            "city": "buenos-aires",
+            "category": "coffee",
+            "source_url": "https://reddit.com/r/test",
+            "source_type": "reddit",
+            "date": "2024-11-15",
+        }
+
+        # User signal match
+        user_match = MagicMock()
+        user_match.id = "user_test-jazz-0"
+        user_match.score = 0.88
+        user_match.metadata = {
+            "text": "User's top Spotify artists: Miles Davis, Tom Jobim. Heavy jazz and bossa nova listener.",
+            "signal_type": "top_artists",
+            "category": "music_taste",
+            "source_type": "spotify",
+        }
+
+        mock_index = MagicMock()
+        # First call (city query), second call (category queries), third call (user namespace)
+        mock_index.query.side_effect = [
+            MagicMock(matches=[city_match]),     # city query
+            MagicMock(matches=[]),                # category: coffee
+            MagicMock(matches=[]),                # category: food
+            MagicMock(matches=[]),                # category: nightlife
+            MagicMock(matches=[]),                # category: culture
+            MagicMock(matches=[user_match]),      # user namespace query
+        ]
+        mock_pc.Index.return_value = mock_index
+
+        mock_completion = MagicMock()
+        mock_completion.choices = [
+            MagicMock(
+                message=MagicMock(
+                    content="## Coffee\n\n**LAB Tostadores** (Chacarita)\nBased on your Spotify showing heavy jazz...\n[Source: reddit - https://reddit.com/r/test]"
+                )
+            )
+        ]
+        mock_completion.usage = MagicMock(
+            prompt_tokens=800, completion_tokens=300, total_tokens=1100
+        )
+        mock_openai.chat.completions.create.return_value = mock_completion
+
+        from server import app, user_data_store
+        from fastapi.testclient import TestClient
+
+        # Register user in data store so guide knows user has data
+        user_data_store["test-dual"] = {"sources": ["spotify"], "chunk_count": 3, "signals": []}
+
+        with patch("server.score_with_ragas", return_value={
+            "faithfulness": 0.9, "context_precision": 0.85, "relevancy": 0.88
+        }):
+            client = TestClient(app)
+            resp = client.post("/api/guide", json={
+                "profile": "Jazz and bossa nova lover",
+                "city": "buenos-aires",
+                "top_k": 5,
+                "user_id": "test-dual",
+            })
+
+        assert resp.status_code == 200
+        data = resp.json()
+        assert data["enhanced"] is True
+        assert data["user_signals"] is not None
+        assert len(data["user_signals"]) > 0
+        assert data["user_signals"][0]["source_type"] == "spotify"
+        print(f"  → Enhanced guide: {len(data['guide'])} chars, {len(data['user_signals'])} user signals")
+
+    @patch("server.pc")
+    @patch("server.openai_client")
+    def test_guide_without_user_id(self, mock_openai, mock_pc):
+        """Test guide generation without user data (standard path)."""
+        mock_openai.embeddings.create.return_value = MagicMock(
+            data=[MagicMock(embedding=[0.1] * 1536)]
+        )
+
+        city_match = MagicMock()
+        city_match.id = "ba-food-01"
+        city_match.score = 0.90
+        city_match.metadata = {
+            "text": "El Preferido de Palermo serves traditional Argentine food.",
+            "city": "buenos-aires",
+            "category": "food",
+            "source_url": "https://reddit.com/r/test",
+            "source_type": "reddit",
+            "date": "2024-11-15",
+        }
+
+        mock_index = MagicMock()
+        mock_index.query.return_value = MagicMock(matches=[city_match])
+        mock_pc.Index.return_value = mock_index
+
+        mock_completion = MagicMock()
+        mock_completion.choices = [
+            MagicMock(message=MagicMock(content="## Food\n\n**El Preferido** (Palermo)\n..."))
+        ]
+        mock_completion.usage = MagicMock(
+            prompt_tokens=500, completion_tokens=200, total_tokens=700
+        )
+        mock_openai.chat.completions.create.return_value = mock_completion
+
+        from server import app
+        from fastapi.testclient import TestClient
+
+        with patch("server.score_with_ragas", return_value={
+            "faithfulness": 0.85, "context_precision": 0.80, "relevancy": 0.82
+        }):
+            client = TestClient(app)
+            resp = client.post("/api/guide", json={
+                "profile": "A food lover.",
+                "city": "buenos-aires",
+                "top_k": 5,
+            })
+
+        assert resp.status_code == 200
+        data = resp.json()
+        assert data["enhanced"] is False
+        assert data["user_signals"] is None
+        print(f"  → Standard guide: {len(data['guide'])} chars")
+
+    @patch("server.pc")
+    @patch("server.openai_client")
+    def test_enhanced_prompt_used_when_user_data(self, mock_openai, mock_pc):
+        """Verify that the enhanced prompt is used when user data is available."""
+        mock_openai.embeddings.create.return_value = MagicMock(
+            data=[MagicMock(embedding=[0.1] * 1536)]
+        )
+
+        city_match = MagicMock()
+        city_match.id = "ba-01"
+        city_match.score = 0.9
+        city_match.metadata = {
+            "text": "Some city content.",
+            "city": "buenos-aires",
+            "category": "coffee",
+            "source_url": "https://example.com",
+            "source_type": "reddit",
+            "date": "2024-01-01",
+        }
+
+        user_match = MagicMock()
+        user_match.id = "user-01"
+        user_match.score = 0.85
+        user_match.metadata = {
+            "text": "User likes jazz.",
+            "signal_type": "genres",
+            "category": "genre_preferences",
+            "source_type": "spotify",
+        }
+
+        mock_index = MagicMock()
+        mock_index.query.side_effect = [
+            MagicMock(matches=[city_match]),
+            MagicMock(matches=[]),
+            MagicMock(matches=[]),
+            MagicMock(matches=[]),
+            MagicMock(matches=[]),
+            MagicMock(matches=[user_match]),
+        ]
+        mock_pc.Index.return_value = mock_index
+
+        mock_completion = MagicMock()
+        mock_completion.choices = [MagicMock(message=MagicMock(content="Guide content"))]
+        mock_completion.usage = MagicMock(prompt_tokens=500, completion_tokens=200, total_tokens=700)
+        mock_openai.chat.completions.create.return_value = mock_completion
+
+        from server import app, user_data_store
+        from fastapi.testclient import TestClient
+
+        user_data_store["test-prompt"] = {"sources": ["spotify"], "chunk_count": 1, "signals": []}
+
+        with patch("server.score_with_ragas", return_value={
+            "faithfulness": 0.9, "context_precision": 0.85, "relevancy": 0.88
+        }):
+            client = TestClient(app)
+            resp = client.post("/api/guide", json={
+                "profile": "Jazz lover",
+                "city": "buenos-aires",
+                "top_k": 5,
+                "user_id": "test-prompt",
+            })
+
+        assert resp.status_code == 200
+
+        # Verify the LLM was called with the enhanced prompt
+        call_args = mock_openai.chat.completions.create.call_args
+        messages = call_args.kwargs.get("messages") or call_args[1].get("messages")
+        system_content = messages[0]["content"]
+        user_content = messages[1]["content"]
+
+        # Enhanced system prompt should mention "TWO sources"
+        assert "TWO sources" in system_content or "Digital Platform" in user_content
+        print("  → Verified enhanced prompt used for dual-corpus RAG")

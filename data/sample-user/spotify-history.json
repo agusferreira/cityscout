@@ -1,0 +1,189 @@
+{
+  "export_info": {
+    "source": "spotify",
+    "type": "streaming_history_extended",
+    "exported_at": "2025-01-15T10:30:00Z"
+  },
+  "streaming_history": [
+    {
+      "ts": "2025-01-14T22:15:00Z",
+      "master_metadata_track_name": "Águas de Março",
+      "master_metadata_album_artist_name": "Tom Jobim",
+      "master_metadata_album_album_name": "Wave",
+      "ms_played": 195000
+    },
+    {
+      "ts": "2025-01-14T22:10:00Z",
+      "master_metadata_track_name": "Desafinado",
+      "master_metadata_album_artist_name": "Stan Getz & João Gilberto",
+      "master_metadata_album_album_name": "Getz/Gilberto",
+      "ms_played": 223000
+    },
+    {
+      "ts": "2025-01-14T21:50:00Z",
+      "master_metadata_track_name": "So What",
+      "master_metadata_album_artist_name": "Miles Davis",
+      "master_metadata_album_album_name": "Kind of Blue",
+      "ms_played": 561000
+    },
+    {
+      "ts": "2025-01-14T21:40:00Z",
+      "master_metadata_track_name": "Bohemian Rhapsody",
+      "master_metadata_album_artist_name": "Queen",
+      "master_metadata_album_album_name": "A Night at the Opera",
+      "ms_played": 354000
+    },
+    {
+      "ts": "2025-01-13T20:00:00Z",
+      "master_metadata_track_name": "Summertime",
+      "master_metadata_album_artist_name": "Ella Fitzgerald & Louis Armstrong",
+      "master_metadata_album_album_name": "Porgy and Bess",
+      "ms_played": 295000
+    },
+    {
+      "ts": "2025-01-13T19:30:00Z",
+      "master_metadata_track_name": "La Cumparsita",
+      "master_metadata_album_artist_name": "Carlos Gardel",
+      "master_metadata_album_album_name": "Tangos Clásicos",
+      "ms_played": 188000
+    },
+    {
+      "ts": "2025-01-13T19:15:00Z",
+      "master_metadata_track_name": "Libertango",
+      "master_metadata_album_artist_name": "Astor Piazzolla",
+      "master_metadata_album_album_name": "Libertango",
+      "ms_played": 210000
+    },
+    {
+      "ts": "2025-01-12T23:00:00Z",
+      "master_metadata_track_name": "Blue in Green",
+      "master_metadata_album_artist_name": "Miles Davis",
+      "master_metadata_album_album_name": "Kind of Blue",
+      "ms_played": 327000
+    },
+    {
+      "ts": "2025-01-12T22:45:00Z",
+      "master_metadata_track_name": "Take Five",
+      "master_metadata_album_artist_name": "Dave Brubeck",
+      "master_metadata_album_album_name": "Time Out",
+      "ms_played": 324000
+    },
+    {
+      "ts": "2025-01-12T22:30:00Z",
+      "master_metadata_track_name": "Girl from Ipanema",
+      "master_metadata_album_artist_name": "Stan Getz & Astrud Gilberto",
+      "master_metadata_album_album_name": "Getz/Gilberto",
+      "ms_played": 312000
+    },
+    {
+      "ts": "2025-01-11T14:00:00Z",
+      "master_metadata_track_name": "Feeling Good",
+      "master_metadata_album_artist_name": "Nina Simone",
+      "master_metadata_album_album_name": "I Put a Spell on You",
+      "ms_played": 175000
+    },
+    {
+      "ts": "2025-01-11T13:45:00Z",
+      "master_metadata_track_name": "Nardis",
+      "master_metadata_album_artist_name": "Bill Evans",
+      "master_metadata_album_album_name": "Explorations",
+      "ms_played": 420000
+    },
+    {
+      "ts": "2025-01-10T20:00:00Z",
+      "master_metadata_track_name": "Corcovado",
+      "master_metadata_album_artist_name": "Tom Jobim",
+      "master_metadata_album_album_name": "Wave",
+      "ms_played": 270000
+    },
+    {
+      "ts": "2025-01-10T19:30:00Z",
+      "master_metadata_track_name": "Oblivion",
+      "master_metadata_album_artist_name": "Astor Piazzolla",
+      "master_metadata_album_album_name": "Tango: Zero Hour",
+      "ms_played": 345000
+    },
+    {
+      "ts": "2025-01-10T19:00:00Z",
+      "master_metadata_track_name": "Comptine d'un autre été",
+      "master_metadata_album_artist_name": "Yann Tiersen",
+      "master_metadata_album_album_name": "Amélie OST",
+      "ms_played": 120000
+    },
+    {
+      "ts": "2025-01-09T21:30:00Z",
+      "master_metadata_track_name": "My Favorite Things",
+      "master_metadata_album_artist_name": "John Coltrane",
+      "master_metadata_album_album_name": "My Favorite Things",
+      "ms_played": 810000
+    },
+    {
+      "ts": "2025-01-09T21:00:00Z",
+      "master_metadata_track_name": "Black Orpheus",
+      "master_metadata_album_artist_name": "Luiz Bonfá",
+      "master_metadata_album_album_name": "Black Orpheus OST",
+      "ms_played": 200000
+    },
+    {
+      "ts": "2025-01-08T17:00:00Z",
+      "master_metadata_track_name": "Round Midnight",
+      "master_metadata_album_artist_name": "Thelonious Monk",
+      "master_metadata_album_album_name": "Genius of Modern Music",
+      "ms_played": 380000
+    },
+    {
+      "ts": "2025-01-08T16:30:00Z",
+      "master_metadata_track_name": "Samba de Uma Nota Só",
+      "master_metadata_album_artist_name": "Tom Jobim",
+      "master_metadata_album_album_name": "Stone Flower",
+      "ms_played": 240000
+    },
+    {
+      "ts": "2025-01-07T22:00:00Z",
+      "master_metadata_track_name": "Autumn Leaves",
+      "master_metadata_album_artist_name": "Cannonball Adderley",
+      "master_metadata_album_album_name": "Somethin' Else",
+      "ms_played": 690000
+    },
+    {
+      "ts": "2025-01-07T09:00:00Z",
+      "master_metadata_track_name": "Pale Blue Eyes",
+      "master_metadata_album_artist_name": "The Velvet Underground",
+      "master_metadata_album_album_name": "The Velvet Underground",
+      "ms_played": 340000
+    },
+    {
+      "ts": "2025-01-06T20:00:00Z",
+      "master_metadata_track_name": "Volver",
+      "master_metadata_album_artist_name": "Carlos Gardel",
+      "master_metadata_album_album_name": "Tangos Clásicos",
+      "ms_played": 195000
+    },
+    {
+      "ts": "2025-01-05T15:00:00Z",
+      "master_metadata_track_name": "Amado Mio",
+      "master_metadata_album_artist_name": "Pink Martini",
+      "master_metadata_album_album_name": "Hang On Little Tomato",
+      "ms_played": 180000
+    },
+    {
+      "ts": "2025-01-05T14:30:00Z",
+      "master_metadata_track_name": "Stolen Moments",
+      "master_metadata_album_artist_name": "Oliver Nelson",
+      "master_metadata_album_album_name": "The Blues and the Abstract Truth",
+      "ms_played": 500000
+    }
+  ],
+  "top_artists": [
+    {"name": "Miles Davis", "genres": ["jazz", "cool jazz", "bebop"]},
+    {"name": "Tom Jobim", "genres": ["bossa nova", "brazilian jazz", "MPB"]},
+    {"name": "Astor Piazzolla", "genres": ["tango", "nuevo tango", "argentine tango"]},
+    {"name": "John Coltrane", "genres": ["jazz", "hard bop", "modal jazz"]},
+    {"name": "Stan Getz", "genres": ["jazz", "bossa nova", "cool jazz"]},
+    {"name": "Nina Simone", "genres": ["jazz", "soul", "blues"]},
+    {"name": "Bill Evans", "genres": ["jazz", "piano jazz", "cool jazz"]},
+    {"name": "Carlos Gardel", "genres": ["tango", "argentine tango"]},
+    {"name": "Thelonious Monk", "genres": ["jazz", "bebop"]},
+    {"name": "The Velvet Underground", "genres": ["art rock", "experimental", "proto-punk"]}
+  ]
+}

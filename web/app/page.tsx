@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback } from "react";
 import QuizStep, { QuizStepData } from "./components/QuizStep";
 import ProfileCard from "./components/ProfileCard";
+import DataUpload from "./components/DataUpload";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001";
 
@@ -238,7 +239,7 @@ interface IngestStatus {
   error: string | null;
 }
 
-type AppState = "landing" | "quiz" | "profile" | "city-select" | "loading-guide";
+type AppState = "landing" | "quiz" | "profile" | "enhance" | "city-select" | "loading-guide";
 
 // ── City Emojis ──
 const CITY_EMOJI: Record<string, string> = {
@@ -330,6 +331,9 @@ export default function Home() {
   const [profileLoading, setProfileLoading] = useState(false);
   const [cities, setCities] = useState<City[]>([]);
   const [selectedCity, setSelectedCity] = useState<string | null>(null);
+  const [userId, setUserId] = useState<string>("");
+  const [uploadedSources, setUploadedSources] = useState<string[]>([]);
+  const [enhancedProfile, setEnhancedProfile] = useState<string>("");
   const [ingestStatus, setIngestStatus] = useState<IngestStatus>({
     running: false,
     phase: "idle",
@@ -419,12 +423,39 @@ export default function Home() {
 
   const handleCitySelect = (citySlug: string) => {
     setSelectedCity(citySlug);
-    // Navigate to guide page with state
+    // Use enhanced profile if available, otherwise quiz profile
+    const activeProfile = enhancedProfile || profile;
     const params = new URLSearchParams({
       city: citySlug,
-      profile: profile,
+      profile: activeProfile,
     });
+    if (userId) {
+      params.set("user_id", userId);
+    }
     window.location.href = `/guide?${params.toString()}`;
+  };
+
+  const handleEnhanceProfile = async () => {
+    if (!userId || uploadedSources.length === 0) return;
+    setProfileLoading(true);
+    try {
+      const res = await fetch(`${API_URL}/api/profile/enhance`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          quiz_answers: answers,
+          user_id: userId,
+        }),
+      });
+      const data = await res.json();
+      if (data.profile) {
+        setEnhancedProfile(data.profile);
+      }
+    } catch {
+      // Keep original profile on error
+    } finally {
+      setProfileLoading(false);
+    }
   };
 
   // ── Landing Page ──
@@ -501,11 +532,16 @@ export default function Home() {
           </div>
         ) : (
           <>
-            <ProfileCard profile={profile} quizAnswers={answers} />
+            <ProfileCard
+              profile={enhancedProfile || profile}
+              quizAnswers={answers}
+              enhanced={!!enhancedProfile}
+              dataSources={uploadedSources}
+            />
 
             <div className="mx-auto mt-8 text-center">
               <p className="mb-4 text-muted">Does this look right?</p>
-              <div className="flex gap-3 justify-center">
+              <div className="flex flex-wrap gap-3 justify-center">
                 <button
                   onClick={() => setAppState("city-select")}
                   className="rounded-xl bg-accent px-6 py-3 font-semibold text-white transition-all hover:scale-105 hover:bg-accent-hover"
@@ -513,9 +549,16 @@ export default function Home() {
                   That&apos;s me! Pick a city →
                 </button>
                 <button
+                  onClick={() => setAppState("enhance")}
+                  className="rounded-xl border border-accent/50 bg-accent/10 px-6 py-3 font-semibold text-accent transition-all hover:bg-accent/20"
+                >
+                  🔗 Connect Your Data
+                </button>
+                <button
                   onClick={() => {
                     setQuizStep(0);
                     setAnswers({});
+                    setEnhancedProfile("");
                     setAppState("quiz");
                   }}
                   className="rounded-xl border border-border px-6 py-3 text-muted transition-colors hover:border-accent hover:text-foreground"
@@ -526,6 +569,45 @@ export default function Home() {
             </div>
           </>
         )}
+      </div>
+    );
+  }
+
+  // ── Enhance Profile with Data ──
+  if (appState === "enhance") {
+    return (
+      <div className="flex min-h-screen flex-col justify-center py-12">
+        <DataUpload
+          userId={userId}
+          onUserIdChange={(id) => setUserId(id)}
+          onUploadComplete={(result) => {
+            setUploadedSources((prev) => {
+              const next = [...prev];
+              if (!next.includes(result.source)) next.push(result.source);
+              return next;
+            });
+          }}
+        />
+
+        <div className="mx-auto mt-8 flex flex-wrap gap-3 justify-center">
+          {uploadedSources.length > 0 && (
+            <button
+              onClick={async () => {
+                await handleEnhanceProfile();
+                setAppState("profile");
+              }}
+              className="rounded-xl bg-accent px-6 py-3 font-semibold text-white transition-all hover:scale-105 hover:bg-accent-hover"
+            >
+              ✨ Generate Enhanced Profile
+            </button>
+          )}
+          <button
+            onClick={() => setAppState("profile")}
+            className="rounded-xl border border-border px-6 py-3 text-muted transition-colors hover:border-accent hover:text-foreground"
+          >
+            {uploadedSources.length > 0 ? "Skip Enhancement" : "← Back to Profile"}
+          </button>
+        </div>
       </div>
     );
   }

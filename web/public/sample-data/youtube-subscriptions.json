@@ -1,0 +1,43 @@
+{
+  "export_info": {
+    "source": "youtube",
+    "type": "subscriptions_and_history",
+    "exported_at": "2025-01-15T10:30:00Z"
+  },
+  "subscriptions": [
+    {"channel_name": "James Hoffmann", "category": "coffee", "url": "https://youtube.com/@jameshoffmann"},
+    {"channel_name": "Mark Wiens", "category": "food_travel", "url": "https://youtube.com/@markwiens"},
+    {"channel_name": "Best Ever Food Review Show", "category": "food_travel", "url": "https://youtube.com/@besteverfoodreviewshow"},
+    {"channel_name": "Rick Steves' Europe", "category": "travel", "url": "https://youtube.com/@ricksteves"},
+    {"channel_name": "The Infographics Show", "category": "education", "url": "https://youtube.com/@theinfographicsshow"},
+    {"channel_name": "Architectural Digest", "category": "architecture_design", "url": "https://youtube.com/@architecturaldigest"},
+    {"channel_name": "Adam Ragusea", "category": "cooking", "url": "https://youtube.com/@adamragusea"},
+    {"channel_name": "Bon Appétit", "category": "cooking", "url": "https://youtube.com/@bonappetit"},
+    {"channel_name": "Jazz at Lincoln Center", "category": "music", "url": "https://youtube.com/@jazzatlc"},
+    {"channel_name": "KEXP", "category": "music", "url": "https://youtube.com/@klomp"},
+    {"channel_name": "The Points Guy", "category": "travel", "url": "https://youtube.com/@thepointsguy"},
+    {"channel_name": "Geography Now", "category": "education", "url": "https://youtube.com/@geographynow"},
+    {"channel_name": "Abroad in Japan", "category": "travel", "url": "https://youtube.com/@abroadinjapan"},
+    {"channel_name": "Binging with Babish", "category": "cooking", "url": "https://youtube.com/@bingingwithbabish"},
+    {"channel_name": "Not Just Bikes", "category": "urbanism", "url": "https://youtube.com/@notjustbikes"},
+    {"channel_name": "Wine Folly", "category": "wine", "url": "https://youtube.com/@winefolly"},
+    {"channel_name": "The Art Assignment", "category": "art", "url": "https://youtube.com/@theartassignment"},
+    {"channel_name": "Vox Borders", "category": "documentary", "url": "https://youtube.com/@vox"}
+  ],
+  "watch_history": [
+    {"title": "The Best Coffee Shops in Buenos Aires", "channel": "James Hoffmann", "category": "coffee", "watched_at": "2025-01-14T15:00:00Z"},
+    {"title": "Street Food Tour of Barcelona's La Boqueria", "channel": "Mark Wiens", "category": "food_travel", "watched_at": "2025-01-13T20:00:00Z"},
+    {"title": "Why Lisbon is Europe's Best Kept Secret", "channel": "Rick Steves", "category": "travel", "watched_at": "2025-01-12T18:00:00Z"},
+    {"title": "How to Make Perfect Argentine Empanadas", "channel": "Bon Appétit", "category": "cooking", "watched_at": "2025-01-11T14:00:00Z"},
+    {"title": "Jazz Piano Masterclass - Bill Evans Style", "channel": "Jazz at Lincoln Center", "category": "music", "watched_at": "2025-01-10T21:00:00Z"},
+    {"title": "Architecture of Antoni Gaudí Explained", "channel": "Architectural Digest", "category": "architecture_design", "watched_at": "2025-01-09T16:00:00Z"},
+    {"title": "Wine Tasting Guide for Beginners", "channel": "Wine Folly", "category": "wine", "watched_at": "2025-01-08T19:00:00Z"},
+    {"title": "Exploring Buenos Aires' Hidden Neighborhoods", "channel": "Abroad in Japan", "category": "travel", "watched_at": "2025-01-07T17:00:00Z"},
+    {"title": "Traditional Portuguese Pastéis de Nata Recipe", "channel": "Binging with Babish", "category": "cooking", "watched_at": "2025-01-06T12:00:00Z"},
+    {"title": "Why Dutch Cities Are So Bikeable", "channel": "Not Just Bikes", "category": "urbanism", "watched_at": "2025-01-05T20:00:00Z"},
+    {"title": "The History of Tango in Argentina", "channel": "Geography Now", "category": "education", "watched_at": "2025-01-04T15:00:00Z"},
+    {"title": "Modern Art Museum Guide - What to Look For", "channel": "The Art Assignment", "category": "art", "watched_at": "2025-01-03T11:00:00Z"},
+    {"title": "Best Natural Wine Bars in Europe", "channel": "Wine Folly", "category": "wine", "watched_at": "2025-01-02T19:00:00Z"},
+    {"title": "Barcelona Tapas Crawl - 10 Must Try Spots", "channel": "Best Ever Food Review Show", "category": "food_travel", "watched_at": "2025-01-01T16:00:00Z"}
+  ]
+}

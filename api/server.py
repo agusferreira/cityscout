@@ -1,9 +1,10 @@
 """
 CityScout — Personalized city guides powered by RAG.
-FastAPI backend with Pinecone vector search, OpenAI embeddings & generation, and RAGAS evaluation.
+FastAPI backend with Pinecone vector search, OpenAI embeddings & generation,
+multi-source user data upload, dual-corpus RAG, and RAGAS evaluation.
 """
 
-import json, os, re, time, threading, glob
+import json, os, re, time, threading, glob, uuid
 from pathlib import Path
 
 from dotenv import load_dotenv
@@ -19,7 +20,12 @@ from prompts import (
     PROFILE_USER_TEMPLATE,
     GUIDE_SYSTEM_PROMPT,
     GUIDE_USER_TEMPLATE,
+    ENHANCED_PROFILE_SYSTEM_PROMPT,
+    ENHANCED_PROFILE_USER_TEMPLATE,
+    ENHANCED_GUIDE_SYSTEM_PROMPT,
+    ENHANCED_GUIDE_USER_TEMPLATE,
 )
+from parsers import parse_user_data, PARSERS
 
 # ── Config ──
 
@@ -74,6 +80,17 @@ class GuideRequest(BaseModel):
     profile: str
     city: str
     top_k: int = 8
+    user_id: Optional[str] = None  # If set, also query user namespace for dual-corpus RAG
+
+
+class UserDataUpload(BaseModel):
+    source: str   # "spotify" | "youtube" | "google_maps" | "instagram"
+    data: dict    # Raw export JSON
+    user_id: Optional[str] = None  # Auto-generated if not provided
+
+
+# In-memory user data store (maps user_id → uploaded source info)
+user_data_store: dict[str, dict] = {}
 
 
 # ── Helpers ──
@@ -139,7 +156,6 @@ def load_city_data(city_slug: str) -> list[dict]:
     for item in raw:
         text = item.get("text", "")
         if len(text.split()) <= 500:
-            # Single chunk — include metadata in the text for richer embedding
             embed_text_str = (
                 f"City: {item.get('city', '')}\n"
                 f"Category: {item.get('category', '')}\n"
@@ -161,7 +177,6 @@ def load_city_data(city_slug: str) -> list[dict]:
                 }
             )
         else:
-            # Split into sub-chunks
             for ci, c in enumerate(chunk_text(text)):
                 chunks.append(
                     {
@@ -203,12 +218,7 @@ def get_ragas_evaluator():
 
 
 def score_with_ragas(question: str, answer: str, contexts: list[str]) -> dict:
-    """
-    Evaluate a RAG result with RAGAS metrics:
-    - Faithfulness: is the answer grounded in retrieved contexts?
-    - ContextPrecision: are the retrieved chunks relevant?
-    - ResponseRelevancy: does the answer address the question?
-    """
+    """Evaluate a RAG result with RAGAS metrics."""
     from ragas import SingleTurnSample, EvaluationDataset, evaluate
     from ragas.metrics import Faithfulness, LLMContextPrecisionWithoutReference, ResponseRelevancy
 
@@ -280,7 +290,6 @@ def run_ingestion():
         print(f"[ingest] Total: {len(all_chunks)} chunks across {len(city_files)} cities")
         ingest_state["total"] = len(all_chunks)
 
-        # Ensure Pinecone index exists
         ingest_state["phase"] = "indexing"
         existing = [idx.name for idx in pc.list_indexes()]
         if INDEX not in existing:
@@ -291,13 +300,11 @@ def run_ingestion():
                 metric="cosine",
                 spec=ServerlessSpec(cloud="aws", region="us-east-1"),
             )
-            # Wait for index to be ready
             print("[ingest] Waiting for index to be ready...")
             time.sleep(30)
 
         idx = pc.Index(INDEX)
 
-        # Embed + upsert in batches
         ingest_state["phase"] = "embedding"
         batch_size = 50
         for i in range(0, len(all_chunks), batch_size):
@@ -308,20 +315,14 @@ def run_ingestion():
             embeddings = embed_batch(texts)
 
             vectors = [
-                {
-                    "id": c["id"],
-                    "values": emb,
-                    "metadata": c["metadata"],
-                }
+                {"id": c["id"], "values": emb, "metadata": c["metadata"]}
                 for c, emb in zip(batch, embeddings)
             ]
 
             idx.upsert(vectors=vectors)
             ingest_state["processed"] = min(i + batch_size, len(all_chunks))
-            print(
-                f"[ingest] {ingest_state['processed']}/{len(all_chunks)} vectors upserted"
-            )
-            time.sleep(0.3)  # Rate limit courtesy
+            print(f"[ingest] {ingest_state['processed']}/{len(all_chunks)} vectors upserted")
+            time.sleep(0.3)
 
         ingest_state.update(phase="done", running=False)
         print(f"[ingest] ✓ Done — {len(all_chunks)} vectors indexed")
@@ -333,7 +334,7 @@ def run_ingestion():
         ingest_state.update(phase="error", error=str(e), running=False)
 
 
-# ── Routes ──
+# ── Routes: Core ──
 
 
 @app.get("/api/health")
@@ -344,8 +345,7 @@ def health():
 @app.get("/api/cities")
 def list_cities():
     """Return list of available cities with metadata."""
-    cities = get_available_cities()
-    return {"cities": cities}
+    return {"cities": get_available_cities()}
 
 
 @app.post("/api/ingest")
@@ -363,6 +363,9 @@ def ingestion_status():
     return ingest_state
 
 
+# ── Routes: Profile (quiz-only) ──
+
+
 @app.post("/api/profile")
 def generate_profile(req: ProfileRequest):
     """Generate a taste profile from quiz answers using LLM."""
@@ -372,13 +375,6 @@ def generate_profile(req: ProfileRequest):
     print(f"{'─'*70}")
 
     answers = req.quiz_answers
-    print(f"  Coffee: {answers.coffee}")
-    print(f"  Food: {answers.food}")
-    print(f"  Activity: {answers.activity}")
-    print(f"  Nightlife: {answers.nightlife}")
-    print(f"  Neighborhood: {answers.neighborhood}")
-    print(f"  Budget: {answers.budget}")
-
     user_prompt = PROFILE_USER_TEMPLATE.format(
         coffee=answers.coffee,
         food=answers.food,
@@ -400,7 +396,6 @@ def generate_profile(req: ProfileRequest):
 
     profile = completion.choices[0].message.content.strip()
     elapsed = time.time() - t_start
-
     print(f"  → Profile: {profile[:100]}...")
     print(f"  → Generated in {elapsed:.2f}s")
     print(f"{'='*70}\n")
@@ -415,34 +410,231 @@ def generate_profile(req: ProfileRequest):
     }
 
 
+# ── Routes: User Data Upload ──
+
+
+@app.post("/api/profile/upload")
+def upload_user_data(req: UserDataUpload):
+    """
+    Upload user data from external platforms (Spotify, YouTube, Maps, Instagram).
+    Parses the data, embeds it into Pinecone under a user-specific namespace,
+    and returns parsed signals summary.
+    """
+    t_start = time.time()
+
+    # Validate source
+    if req.source not in PARSERS:
+        raise HTTPException(400, f"Unknown source: {req.source}. Valid: {list(PARSERS.keys())}")
+
+    # Generate or use provided user_id
+    user_id = req.user_id or str(uuid.uuid4())[:8]
+    namespace = f"user_{user_id}"
+
+    print(f"\n{'='*70}")
+    print(f"[upload] Processing {req.source} data for user {user_id}")
+    print(f"[upload] Namespace: {namespace}")
+    print(f"{'─'*70}")
+
+    # Step 1: Parse
+    print(f"[1/3 PARSE] Extracting signals from {req.source}...")
+    try:
+        signal_chunks = parse_user_data(req.source, req.data)
+    except Exception as e:
+        print(f"  → Parse error: {e}")
+        raise HTTPException(400, f"Failed to parse {req.source} data: {str(e)}")
+
+    print(f"  → Extracted {len(signal_chunks)} signal chunks")
+    for i, chunk in enumerate(signal_chunks):
+        print(f"  [{i+1}] {chunk['metadata']['signal_type']} / {chunk['metadata']['category']}: {chunk['text'][:80]}...")
+
+    if not signal_chunks:
+        return {
+            "user_id": user_id,
+            "source": req.source,
+            "chunks_stored": 0,
+            "message": "No preference signals extracted from this data",
+        }
+
+    # Step 2: Embed
+    print(f"[2/3 EMBED] Creating embeddings for {len(signal_chunks)} chunks...")
+    texts = [c["text"] for c in signal_chunks]
+    embeddings = embed_batch(texts)
+
+    # Step 3: Store in Pinecone user namespace
+    print(f"[3/3 STORE] Upserting to Pinecone namespace '{namespace}'...")
+    try:
+        idx = pc.Index(INDEX)
+        vectors = []
+        for i, (chunk, emb) in enumerate(zip(signal_chunks, embeddings)):
+            vectors.append({
+                "id": f"{namespace}-{req.source}-{i}",
+                "values": emb,
+                "metadata": {
+                    "text": chunk["text"][:3500],
+                    "signal_type": chunk["metadata"]["signal_type"],
+                    "category": chunk["metadata"]["category"],
+                    "source_type": chunk["metadata"]["source_type"],
+                    "user_id": user_id,
+                },
+            })
+
+        idx.upsert(vectors=vectors, namespace=namespace)
+        print(f"  → Upserted {len(vectors)} vectors to namespace '{namespace}'")
+
+    except Exception as e:
+        print(f"  → Pinecone error: {e}")
+        raise HTTPException(500, f"Failed to store user data: {str(e)}")
+
+    # Track uploaded sources per user
+    if user_id not in user_data_store:
+        user_data_store[user_id] = {"sources": [], "chunk_count": 0, "signals": []}
+    user_data_store[user_id]["sources"].append(req.source)
+    user_data_store[user_id]["chunk_count"] += len(vectors)
+    user_data_store[user_id]["signals"].extend(signal_chunks)
+
+    elapsed = time.time() - t_start
+    print(f"  → Done in {elapsed:.2f}s")
+    print(f"{'='*70}\n")
+
+    return {
+        "user_id": user_id,
+        "source": req.source,
+        "chunks_stored": len(vectors),
+        "signal_types": list(set(c["metadata"]["signal_type"] for c in signal_chunks)),
+        "categories": list(set(c["metadata"]["category"] for c in signal_chunks)),
+        "signals": [
+            {
+                "type": c["metadata"]["signal_type"],
+                "category": c["metadata"]["category"],
+                "preview": c["text"][:120],
+            }
+            for c in signal_chunks
+        ],
+    }
+
+
+@app.get("/api/profile/user/{user_id}")
+def get_user_data_status(user_id: str):
+    """Get status of uploaded user data."""
+    info = user_data_store.get(user_id)
+    if not info:
+        raise HTTPException(404, f"No data found for user {user_id}")
+    return {
+        "user_id": user_id,
+        "sources": list(set(info["sources"])),
+        "chunk_count": info["chunk_count"],
+        "namespace": f"user_{user_id}",
+    }
+
+
+# ── Routes: Enhanced Profile (quiz + uploaded data) ──
+
+
+@app.post("/api/profile/enhance")
+def enhance_profile(req: dict):
+    """
+    Generate an enhanced profile by combining quiz answers with uploaded user data signals.
+    Requires: quiz_answers (dict), user_id (str).
+    """
+    quiz_answers = req.get("quiz_answers", {})
+    user_id = req.get("user_id")
+
+    if not user_id or user_id not in user_data_store:
+        raise HTTPException(400, "No user data uploaded. Upload data first or use /api/profile.")
+
+    t_start = time.time()
+    print(f"\n{'='*70}")
+    print(f"[enhance] Generating enhanced profile for user {user_id}")
+    print(f"{'─'*70}")
+
+    # Retrieve user signal chunks from Pinecone
+    namespace = f"user_{user_id}"
+    try:
+        idx = pc.Index(INDEX)
+        query_vec = embed_text("user preferences music food culture nightlife")
+        results = idx.query(
+            vector=query_vec,
+            top_k=20,
+            include_metadata=True,
+            namespace=namespace,
+        )
+        user_signals = [m.metadata.get("text", "") for m in results.matches]
+    except Exception as e:
+        print(f"  → Error fetching user signals: {e}")
+        user_signals = []
+
+    print(f"  → Retrieved {len(user_signals)} user signal chunks")
+
+    user_prompt = ENHANCED_PROFILE_USER_TEMPLATE.format(
+        coffee=quiz_answers.get("coffee", "Not specified"),
+        food=quiz_answers.get("food", "Not specified"),
+        activity=quiz_answers.get("activity", "Not specified"),
+        nightlife=quiz_answers.get("nightlife", "Not specified"),
+        neighborhood=quiz_answers.get("neighborhood", "Not specified"),
+        budget=quiz_answers.get("budget", "Not specified"),
+        user_data_signals="\n".join(f"- {s}" for s in user_signals) if user_signals else "No additional data.",
+    )
+
+    completion = openai_client.chat.completions.create(
+        model=CHAT_MODEL,
+        messages=[
+            {"role": "system", "content": ENHANCED_PROFILE_SYSTEM_PROMPT},
+            {"role": "user", "content": user_prompt},
+        ],
+        temperature=0.8,
+        max_tokens=500,
+    )
+
+    profile = completion.choices[0].message.content.strip()
+    elapsed = time.time() - t_start
+    print(f"  → Enhanced profile: {profile[:100]}...")
+    print(f"  → Generated in {elapsed:.2f}s")
+    print(f"{'='*70}\n")
+
+    return {
+        "profile": profile,
+        "enhanced": True,
+        "user_id": user_id,
+        "data_sources": list(set(user_data_store[user_id]["sources"])),
+        "usage": {
+            "prompt_tokens": completion.usage.prompt_tokens,
+            "completion_tokens": completion.usage.completion_tokens,
+            "total_tokens": completion.usage.total_tokens,
+        },
+    }
+
+
+# ── Routes: Guide Generation (dual-corpus RAG) ──
+
+
 @app.post("/api/guide")
 def generate_guide(req: GuideRequest):
     """
-    Main RAG pipeline:
+    Main RAG pipeline with optional dual-corpus retrieval:
     1. Embed user profile as query
-    2. Query Pinecone for city-specific knowledge
-    3. Generate personalized guide with citations
-    4. Evaluate with RAGAS
+    2. Query Pinecone for city-specific knowledge (city corpus)
+    3. If user_id provided, also query user profile corpus (user namespace)
+    4. Generate personalized guide with citations
+    5. Evaluate with RAGAS
     """
     t_start = time.time()
+    has_user_data = req.user_id and req.user_id in user_data_store
     print(f"\n{'='*70}")
-    print(f"[guide] Generating personalized guide")
-    print(f"[guide] City: {req.city} | top_k: {req.top_k}")
+    print(f"[guide] Generating {'enhanced ' if has_user_data else ''}personalized guide")
+    print(f"[guide] City: {req.city} | top_k: {req.top_k} | user_id: {req.user_id or 'none'}")
     print(f"[guide] Profile: {req.profile[:80]}...")
     print(f"{'─'*70}")
 
-    # ── Step 1: Build profile-aware queries ──
-    categories = ["coffee", "food", "nightlife", "culture", "neighborhoods", "fitness"]
+    # ── Step 1: Embed query ──
     query_text = f"Travel recommendations for someone with this taste profile: {req.profile}. City: {req.city}"
-
-    print("[1/4 EMBED] Creating query embedding...")
+    print("[1/5 EMBED] Creating query embedding...")
     t1 = time.time()
     query_vec = embed_text(query_text)
     t_embed = time.time() - t1
     print(f"  → Embedding: {t_embed:.2f}s | dim={len(query_vec)}")
 
-    # ── Step 2: Retrieve from Pinecone ──
-    print(f"[2/4 RETRIEVE] Querying Pinecone index '{INDEX}'...")
+    # ── Step 2: Retrieve from city corpus ──
+    print(f"[2/5 RETRIEVE-CITY] Querying Pinecone index '{INDEX}'...")
     t2 = time.time()
 
     try:
@@ -459,9 +651,9 @@ def generate_guide(req: GuideRequest):
         raise HTTPException(500, f"Vector search failed: {str(e)}")
 
     t_search = time.time() - t2
-    print(f"  → Search: {t_search:.2f}s | {len(matches)} chunks retrieved")
+    print(f"  → City search: {t_search:.2f}s | {len(matches)} chunks retrieved")
 
-    # Also do category-specific queries for diversity
+    # Category-specific queries for diversity
     all_matches = {m.id: m for m in matches}
     for cat in ["coffee", "food", "nightlife", "culture"]:
         cat_query = f"{req.profile}. Best {cat} recommendations in {req.city}"
@@ -480,9 +672,41 @@ def generate_guide(req: GuideRequest):
             pass
 
     final_matches = sorted(all_matches.values(), key=lambda m: m.score, reverse=True)
-    print(f"  → After diversity expansion: {len(final_matches)} unique chunks")
+    print(f"  → After diversity expansion: {len(final_matches)} unique city chunks")
 
-    # Log retrieved chunks
+    # ── Step 3: Retrieve from user corpus (if available) ──
+    user_signals = []
+    t_user = 0.0
+    if has_user_data:
+        user_namespace = f"user_{req.user_id}"
+        print(f"[3/5 RETRIEVE-USER] Querying user namespace '{user_namespace}'...")
+        t3u = time.time()
+        try:
+            user_results = idx.query(
+                vector=query_vec,
+                top_k=10,
+                include_metadata=True,
+                namespace=user_namespace,
+            )
+            for m in user_results.matches:
+                user_signals.append({
+                    "score": m.score,
+                    "text": m.metadata.get("text", ""),
+                    "signal_type": m.metadata.get("signal_type", ""),
+                    "category": m.metadata.get("category", ""),
+                    "source_type": m.metadata.get("source_type", ""),
+                })
+            t_user = time.time() - t3u
+            print(f"  → User signals: {t_user:.2f}s | {len(user_signals)} chunks")
+            for i, s in enumerate(user_signals):
+                print(f"  [U{i+1}] score={s['score']:.4f} | {s['signal_type']}/{s['category']}")
+        except Exception as e:
+            t_user = time.time() - t3u
+            print(f"  → User namespace query failed: {e} (continuing without user data)")
+    else:
+        print("[3/5 RETRIEVE-USER] No user_id — skipping user corpus")
+
+    # Build city sources list
     sources = []
     total_ctx_chars = 0
     print(f"  {'─'*66}")
@@ -490,7 +714,6 @@ def generate_guide(req: GuideRequest):
         text = m.metadata.get("text", "")
         chars = len(text)
         total_ctx_chars += chars
-        preview = text[:80].replace("\n", " ")
         source = {
             "score": m.score,
             "text": text,
@@ -502,33 +725,49 @@ def generate_guide(req: GuideRequest):
         }
         sources.append(source)
         print(f"  [{i+1}] score={m.score:.4f} | {chars:,} chars | cat={source['category']}")
-        print(f"      src: {source['source_type']} — {source['source_url'][:60]}")
-        print(f"      text: \"{preview}...\"")
     print(f"  {'─'*66}")
-    print(f"  Total context: {total_ctx_chars:,} chars across {len(sources)} chunks")
+    print(f"  Total context: {total_ctx_chars:,} chars across {len(sources)} city chunks")
 
-    # ── Step 3: Generate guide ──
+    # ── Step 4: Generate guide ──
     print(f"{'─'*70}")
-    print("[3/4 GENERATE] Sending to LLM...")
+    print("[4/5 GENERATE] Sending to LLM...")
 
     context = "\n\n---\n\n".join(
         f"[{i+1}] Category: {s['category']} | Source: {s['source_type']} — {s['source_url']}\n{s['text']}"
         for i, s in enumerate(sources)
     )
-    user_prompt = GUIDE_USER_TEMPLATE.format(
-        profile=req.profile,
-        city=req.city.replace("-", " ").title(),
-        context=context,
-    )
 
-    print(f"  → System prompt: {len(GUIDE_SYSTEM_PROMPT)} chars")
+    # Choose prompt based on whether we have user data
+    if has_user_data and user_signals:
+        user_context = "\n\n".join(
+            f"[{s['source_type'].upper()}] ({s['category']}/{s['signal_type']}): {s['text']}"
+            for s in user_signals
+        )
+        user_prompt = ENHANCED_GUIDE_USER_TEMPLATE.format(
+            profile=req.profile,
+            city=req.city.replace("-", " ").title(),
+            context=context,
+            user_context=user_context,
+        )
+        system_prompt = ENHANCED_GUIDE_SYSTEM_PROMPT
+        print(f"  → Using ENHANCED dual-corpus prompt (city + user data)")
+    else:
+        user_prompt = GUIDE_USER_TEMPLATE.format(
+            profile=req.profile,
+            city=req.city.replace("-", " ").title(),
+            context=context,
+        )
+        system_prompt = GUIDE_SYSTEM_PROMPT
+        print(f"  → Using standard single-corpus prompt")
+
+    print(f"  → System prompt: {len(system_prompt)} chars")
     print(f"  → User prompt: {len(user_prompt):,} chars")
 
     t3 = time.time()
     completion = openai_client.chat.completions.create(
         model=CHAT_MODEL,
         messages=[
-            {"role": "system", "content": GUIDE_SYSTEM_PROMPT},
+            {"role": "system", "content": system_prompt},
             {"role": "user", "content": user_prompt},
         ],
         temperature=0.4,
@@ -541,15 +780,14 @@ def generate_guide(req: GuideRequest):
     print(f"  → LLM responded in {t_gen:.2f}s | model={CHAT_MODEL}")
     print(f"  → Tokens: prompt={tokens.prompt_tokens:,} + completion={tokens.completion_tokens:,} = {tokens.total_tokens:,}")
     print(f"  → Guide length: {len(guide):,} chars")
-    for line in guide.split("\n")[:5]:
-        print(f"  │ {line[:90]}")
-    if guide.count("\n") > 5:
-        print(f"  │ ... ({guide.count(chr(10)) - 5} more lines)")
 
-    # ── Step 4: RAGAS Evaluation ──
+    # ── Step 5: RAGAS Evaluation ──
     print(f"{'─'*70}")
-    print("[4/4 RAGAS] Evaluating retrieval + generation quality...")
+    print("[5/5 RAGAS] Evaluating retrieval + generation quality...")
     contexts_for_eval = [s["text"] for s in sources]
+    if user_signals:
+        contexts_for_eval.extend([s["text"] for s in user_signals])
+
     t4 = time.time()
     try:
         scores = score_with_ragas(
@@ -572,15 +810,17 @@ def generate_guide(req: GuideRequest):
     # ── Summary ──
     total = time.time() - t_start
     print(f"{'─'*70}")
-    print(f"[summary] embed={t_embed:.2f}s → search={t_search:.2f}s → generate={t_gen:.2f}s → ragas={t_ragas:.2f}s")
-    print(f"[summary] Total: {total:.2f}s | {tokens.total_tokens:,} tokens | {len(sources)} sources")
+    print(f"[summary] embed={t_embed:.2f}s → city_search={t_search:.2f}s → user_search={t_user:.2f}s → generate={t_gen:.2f}s → ragas={t_ragas:.2f}s")
+    print(f"[summary] Total: {total:.2f}s | {tokens.total_tokens:,} tokens | {len(sources)} city sources | {len(user_signals)} user signals")
     print(f"{'='*70}\n")
 
     return {
         "guide": guide,
         "sources": sources,
+        "user_signals": user_signals if user_signals else None,
         "scores": scores,
         "city": req.city,
+        "enhanced": bool(has_user_data and user_signals),
         "usage": {
             "prompt_tokens": tokens.prompt_tokens,
             "completion_tokens": tokens.completion_tokens,

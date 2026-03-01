@@ -17,11 +17,21 @@ interface Scores {
   error?: string;
 }
 
+interface UserSignal {
+  score: number;
+  text: string;
+  signal_type: string;
+  category: string;
+  source_type: string;
+}
+
 interface GuideSectionProps {
   guide: string;
   sources: Source[];
+  userSignals?: UserSignal[];
   scores: Scores;
   city: string;
+  dataSourcesUsed?: string[];
 }
 
 function formatMarkdown(md: string): string {
@@ -86,11 +96,27 @@ function CategoryBadge({ category }: { category: string }) {
   );
 }
 
+const SOURCE_EMOJI: Record<string, string> = {
+  spotify: "🎵",
+  youtube: "📺",
+  google_maps: "📍",
+  instagram: "📸",
+};
+
+const SOURCE_LABEL: Record<string, string> = {
+  spotify: "Spotify",
+  youtube: "YouTube",
+  google_maps: "Google Maps",
+  instagram: "Instagram",
+};
+
 export default function GuideSection({
   guide,
   sources,
+  userSignals = [],
   scores,
   city,
+  dataSourcesUsed = [],
 }: GuideSectionProps) {
   return (
     <div className="fade-in mx-auto max-w-3xl px-4">
@@ -101,7 +127,24 @@ export default function GuideSection({
         </h1>
         <p className="text-muted">
           Personalized recommendations based on your taste profile
+          {dataSourcesUsed.length > 0 && " + your personal data"}
         </p>
+        {dataSourcesUsed.length > 0 && (
+          <div className="mt-3 flex flex-wrap items-center justify-center gap-2">
+            <span className="text-xs text-muted">Data sources:</span>
+            <span className="inline-flex items-center gap-1 rounded-full bg-accent/10 px-2.5 py-0.5 text-xs text-accent">
+              📚 City Knowledge
+            </span>
+            {dataSourcesUsed.map((src) => (
+              <span
+                key={src}
+                className="inline-flex items-center gap-1 rounded-full bg-accent/10 px-2.5 py-0.5 text-xs text-accent"
+              >
+                {SOURCE_EMOJI[src] || "📊"} {SOURCE_LABEL[src] || src}
+              </span>
+            ))}
+          </div>
+        )}
       </div>
 
       {/* Guide content */}
@@ -129,10 +172,44 @@ export default function GuideSection({
         </div>
       )}
 
+      {/* User Signals (if dual-corpus) */}
+      {userSignals.length > 0 && (
+        <div className="mb-8 rounded-xl border border-accent/20 bg-accent/5 p-6">
+          <h3 className="mb-4 text-sm font-semibold uppercase tracking-wide text-accent">
+            🧬 Personal Data Signals ({userSignals.length} used)
+          </h3>
+          <div className="space-y-2">
+            {userSignals.map((signal, idx) => (
+              <div key={idx} className="rounded-lg border border-border bg-card p-3">
+                <div className="mb-1 flex flex-wrap items-center gap-2">
+                  <span className="shrink-0 rounded bg-accent/20 px-1.5 py-0.5 font-mono text-xs text-accent">
+                    U{idx + 1}
+                  </span>
+                  <span className="inline-flex items-center gap-1 rounded-full bg-accent/10 px-2 py-0.5 text-[10px] text-accent">
+                    {SOURCE_EMOJI[signal.source_type] || "📊"} {SOURCE_LABEL[signal.source_type] || signal.source_type}
+                  </span>
+                  <CategoryBadge category={signal.category} />
+                  <span className="text-xs text-muted">{signal.signal_type}</span>
+                  <span className="text-xs text-accent">
+                    {(signal.score * 100).toFixed(1)}% relevance
+                  </span>
+                </div>
+                <p className="line-clamp-2 text-sm text-muted">
+                  {signal.text.slice(0, 150)}...
+                </p>
+              </div>
+            ))}
+          </div>
+          <p className="mt-3 text-xs text-muted">
+            These signals from your personal data exports were used alongside city knowledge to personalize your guide.
+          </p>
+        </div>
+      )}
+
       {/* Sources */}
       <div className="rounded-xl border border-border bg-card p-6">
         <h3 className="mb-4 text-sm font-semibold uppercase tracking-wide text-muted">
-          Sources ({sources.length} chunks retrieved)
+          City Knowledge Sources ({sources.length} chunks retrieved)
         </h3>
         <div className="space-y-3">
           {sources.map((source, idx) => (
