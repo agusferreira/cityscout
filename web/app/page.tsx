@@ -1,226 +1,9 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
-import QuizStep, { QuizStepData } from "./components/QuizStep";
-import ProfileCard from "./components/ProfileCard";
 import DataUpload from "./components/DataUpload";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001";
-
-// ── Quiz Data ──
-
-const QUIZ_STEPS: QuizStepData[] = [
-  {
-    id: "coffee",
-    title: "What's your coffee vibe?",
-    subtitle: "How you start your morning says everything about you.",
-    options: [
-      {
-        id: "Specialty pour-over",
-        label: "Third Wave Temple",
-        emoji: "☕",
-        description:
-          "Single-origin pour-overs, light roasts, and baristas who geek out about extraction",
-      },
-      {
-        id: "Cozy café regular",
-        label: "Cozy Corner Regular",
-        emoji: "🛋️",
-        description:
-          "Warm atmosphere, great lattes, a book and a pastry — the perfect morning",
-      },
-      {
-        id: "Quick espresso standing up",
-        label: "Quick Espresso",
-        emoji: "⚡",
-        description:
-          "Knock back an espresso at the counter like a local — no fuss, all fuel",
-      },
-      {
-        id: "Laptop café worker",
-        label: "Digital Nomad HQ",
-        emoji: "💻",
-        description:
-          "Reliable wifi, power outlets, great coffee, and nobody rushing you out",
-      },
-    ],
-  },
-  {
-    id: "food",
-    title: "How do you eat?",
-    subtitle: "Your food style reveals your true travel personality.",
-    options: [
-      {
-        id: "Street food and markets",
-        label: "Street Food Hunter",
-        emoji: "🌮",
-        description:
-          "Hole-in-the-wall spots, food markets, and eating standing up at a counter",
-      },
-      {
-        id: "Fine dining and tasting menus",
-        label: "Fine Dining Explorer",
-        emoji: "🍷",
-        description:
-          "Tasting menus, wine pairings, and chefs who tell stories through food",
-      },
-      {
-        id: "Local traditional cuisine",
-        label: "Tradition Keeper",
-        emoji: "🥘",
-        description:
-          "The dish grandma makes, the 100-year-old restaurant, the recipe that hasn't changed",
-      },
-      {
-        id: "Vegetarian and health-conscious",
-        label: "Plant-Forward",
-        emoji: "🥬",
-        description:
-          "Organic markets, creative vegetarian cuisine, smoothie bowls, and acai",
-      },
-    ],
-  },
-  {
-    id: "activity",
-    title: "What gets you moving?",
-    subtitle: "How you spend your days shapes your ideal itinerary.",
-    options: [
-      {
-        id: "Walking tours and street art",
-        label: "Urban Explorer",
-        emoji: "🚶",
-        description:
-          "Get lost in neighborhoods, discover street art, stumble into hidden gems",
-      },
-      {
-        id: "Museums and galleries",
-        label: "Culture Vulture",
-        emoji: "🎨",
-        description:
-          "World-class museums, local galleries, architecture walks, and bookshops",
-      },
-      {
-        id: "Outdoor sports and fitness",
-        label: "Active Adventurer",
-        emoji: "🏄",
-        description:
-          "Running routes, surf spots, hiking trails, gym drop-ins, and yoga classes",
-      },
-      {
-        id: "Shopping and relaxing",
-        label: "Leisure & Style",
-        emoji: "🛍️",
-        description:
-          "Boutique shopping, spa days, scenic parks, and leisurely brunches",
-      },
-    ],
-  },
-  {
-    id: "nightlife",
-    title: "When the sun goes down...",
-    subtitle: "Your nightlife style is the ultimate travel personality test.",
-    options: [
-      {
-        id: "Cocktail bars and speakeasies",
-        label: "Speakeasy Seeker",
-        emoji: "🍸",
-        description:
-          "Hidden doors, craft cocktails, moody lighting, and bartenders who are artists",
-      },
-      {
-        id: "Live music and dancing",
-        label: "Live & Loud",
-        emoji: "🎵",
-        description:
-          "Jazz clubs, local bands, late-night dancing, and feeling the bass in your chest",
-      },
-      {
-        id: "Wine bars and dinner",
-        label: "Wine & Dine",
-        emoji: "🍷",
-        description:
-          "Natural wine bars, long dinners, local vintages, and great conversation",
-      },
-      {
-        id: "Early to bed, early to rise",
-        label: "Sunrise > Sunset",
-        emoji: "🌅",
-        description:
-          "A quiet drink then early to bed — you'll catch the sunrise while everyone's sleeping",
-      },
-    ],
-  },
-  {
-    id: "neighborhood",
-    title: "Your ideal neighborhood?",
-    subtitle: "Where you stay defines your whole trip experience.",
-    options: [
-      {
-        id: "Artsy and bohemian",
-        label: "Artsy & Bohemian",
-        emoji: "🎭",
-        description:
-          "Street art, independent shops, creative energy, and locals who express themselves",
-      },
-      {
-        id: "Historic and charming",
-        label: "Old Soul",
-        emoji: "🏛️",
-        description:
-          "Cobblestone streets, centuries-old buildings, history around every corner",
-      },
-      {
-        id: "Trendy and upscale",
-        label: "Trendy & Polished",
-        emoji: "✨",
-        description:
-          "The hottest restaurants, design boutiques, and the neighborhood everyone's talking about",
-      },
-      {
-        id: "Local and residential",
-        label: "Deep Local",
-        emoji: "🏘️",
-        description:
-          "Where tourists don't go, real neighborhood life, corner bars, and morning markets",
-      },
-    ],
-  },
-  {
-    id: "budget",
-    title: "What's your budget vibe?",
-    subtitle: "No judgment — every budget has its own adventure style.",
-    options: [
-      {
-        id: "Backpacker budget",
-        label: "Budget Explorer",
-        emoji: "🎒",
-        description:
-          "Street food, free activities, happy hours, and making every dollar count",
-      },
-      {
-        id: "Mid-range comfort",
-        label: "Smart Spender",
-        emoji: "💳",
-        description:
-          "Great restaurants, comfortable stays, occasional splurge on something special",
-      },
-      {
-        id: "Treat yourself",
-        label: "Treat Yourself",
-        emoji: "💎",
-        description:
-          "Life's too short for bad wine. Nice hotels, great meals, premium experiences",
-      },
-      {
-        id: "No budget, full experience",
-        label: "Money Is No Object",
-        emoji: "🥂",
-        description:
-          "Michelin stars, private tours, the best of everything — you're here to experience it all",
-      },
-    ],
-  },
-];
 
 // ── Types ──
 
@@ -229,6 +12,7 @@ interface City {
   name: string;
   chunk_count: number;
   categories: string[];
+  center: { lat: number; lng: number; zoom: number };
 }
 
 interface IngestStatus {
@@ -239,16 +23,21 @@ interface IngestStatus {
   error: string | null;
 }
 
-type AppState = "landing" | "quiz" | "profile" | "enhance" | "city-select" | "loading-guide";
+type AppState = "connect" | "destination" | "generating";
 
-// ── City Emojis ──
 const CITY_EMOJI: Record<string, string> = {
   "buenos-aires": "🇦🇷",
   barcelona: "🇪🇸",
   lisbon: "🇵🇹",
 };
 
-// ── Loading Component ──
+const CITY_PHOTOS: Record<string, string> = {
+  "buenos-aires": "🏙️",
+  barcelona: "🏖️",
+  lisbon: "🌇",
+};
+
+// ── Inline Loading Component ──
 
 function LoadingDots() {
   return (
@@ -283,15 +72,6 @@ function IngestPanel({
     error: `Error: ${status.error}`,
   };
 
-  const phaseColor: Record<string, string> = {
-    idle: "text-muted",
-    loading: "text-warning",
-    indexing: "text-warning",
-    embedding: "text-accent",
-    done: "text-success",
-    error: "text-error",
-  };
-
   return (
     <div className="rounded-xl border border-border bg-card p-4">
       <div className="mb-3 flex items-center justify-between">
@@ -306,7 +86,7 @@ function IngestPanel({
           {status.running ? "Running..." : "Index Data"}
         </button>
       </div>
-      <p className={`text-sm ${phaseColor[status.phase] || "text-muted"}`}>
+      <p className={`text-sm ${status.phase === "done" ? "text-success" : status.phase === "error" ? "text-error" : "text-muted"}`}>
         {phaseLabel[status.phase] || status.phase}
       </p>
       {status.running && status.phase === "embedding" && (
@@ -324,16 +104,12 @@ function IngestPanel({
 // ── Main Page ──
 
 export default function Home() {
-  const [appState, setAppState] = useState<AppState>("landing");
-  const [quizStep, setQuizStep] = useState(0);
-  const [answers, setAnswers] = useState<Record<string, string>>({});
-  const [profile, setProfile] = useState("");
-  const [profileLoading, setProfileLoading] = useState(false);
-  const [cities, setCities] = useState<City[]>([]);
-  const [selectedCity, setSelectedCity] = useState<string | null>(null);
+  const [appState, setAppState] = useState<AppState>("connect");
   const [userId, setUserId] = useState<string>("");
   const [uploadedSources, setUploadedSources] = useState<string[]>([]);
-  const [enhancedProfile, setEnhancedProfile] = useState<string>("");
+  const [cities, setCities] = useState<City[]>([]);
+  const [profile, setProfile] = useState<string>("");
+  const [profileLoading, setProfileLoading] = useState(false);
   const [ingestStatus, setIngestStatus] = useState<IngestStatus>({
     running: false,
     phase: "idle",
@@ -342,7 +118,6 @@ export default function Home() {
     error: null,
   });
 
-  // Fetch cities and ingest status on mount
   useEffect(() => {
     fetch(`${API_URL}/api/cities`)
       .then((r) => r.json())
@@ -365,9 +140,7 @@ export default function Home() {
         const data: IngestStatus = await res.json();
         setIngestStatus(data);
         if (!data.running) clearInterval(interval);
-      } catch {
-        /* server may be down */
-      }
+      } catch {}
     }, 2000);
     return () => clearInterval(interval);
   }, []);
@@ -389,194 +162,62 @@ export default function Home() {
     }
   };
 
-  const handleQuizSelect = async (optionId: string) => {
-    const currentStep = QUIZ_STEPS[quizStep];
-    const newAnswers = { ...answers, [currentStep.id]: optionId };
-    setAnswers(newAnswers);
-
-    // Auto-advance after brief delay
-    setTimeout(async () => {
-      if (quizStep < QUIZ_STEPS.length - 1) {
-        setQuizStep(quizStep + 1);
-      } else {
-        // Quiz complete — generate profile
-        setAppState("profile");
-        setProfileLoading(true);
-        try {
-          const res = await fetch(`${API_URL}/api/profile`, {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ quiz_answers: newAnswers }),
-          });
-          const data = await res.json();
-          setProfile(data.profile);
-        } catch (err) {
-          setProfile(
-            "A curious traveler who loves discovering local gems and authentic experiences."
-          );
-        } finally {
-          setProfileLoading(false);
-        }
-      }
-    }, 300);
-  };
-
-  const handleCitySelect = (citySlug: string) => {
-    setSelectedCity(citySlug);
-    // Use enhanced profile if available, otherwise quiz profile
-    const activeProfile = enhancedProfile || profile;
-    const params = new URLSearchParams({
-      city: citySlug,
-      profile: activeProfile,
-    });
-    if (userId) {
-      params.set("user_id", userId);
-    }
-    window.location.href = `/guide?${params.toString()}`;
-  };
-
-  const handleEnhanceProfile = async () => {
-    if (!userId || uploadedSources.length === 0) return;
+  const generateProfile = async () => {
+    if (!userId) return;
     setProfileLoading(true);
     try {
-      const res = await fetch(`${API_URL}/api/profile/enhance`, {
+      const res = await fetch(`${API_URL}/api/profile/generate`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          quiz_answers: answers,
-          user_id: userId,
-        }),
+        body: JSON.stringify({ user_id: userId }),
       });
       const data = await res.json();
       if (data.profile) {
-        setEnhancedProfile(data.profile);
+        setProfile(data.profile);
       }
     } catch {
-      // Keep original profile on error
+      // Fallback profile
+      setProfile(
+        "A curious traveler who loves authentic local experiences and hidden gems."
+      );
     } finally {
       setProfileLoading(false);
     }
   };
 
-  // ── Landing Page ──
-  if (appState === "landing") {
+  const handleContinue = async () => {
+    // Generate profile from uploaded data, then go to destination selection
+    await generateProfile();
+    setAppState("destination");
+  };
+
+  const handleCitySelect = (citySlug: string) => {
+    setAppState("generating");
+    const params = new URLSearchParams({
+      city: citySlug,
+      profile: profile,
+    });
+    if (userId) params.set("user_id", userId);
+    window.location.href = `/guide?${params.toString()}`;
+  };
+
+  // ── Page 1: Connect Your Data ──
+  if (appState === "connect") {
     return (
-      <div className="flex min-h-screen flex-col items-center justify-center px-4">
-        <div className="mb-12 text-center">
-          <div className="mb-6 text-7xl">🧭</div>
-          <h1 className="mb-4 text-5xl font-bold tracking-tight md:text-6xl">
+      <div className="flex min-h-screen flex-col items-center justify-center px-4 py-12">
+        {/* Hero */}
+        <div className="mb-10 text-center">
+          <div className="mb-4 text-6xl">🧭</div>
+          <h1 className="mb-3 text-4xl font-bold tracking-tight md:text-5xl">
             City<span className="gradient-text">Scout</span>
           </h1>
           <p className="mx-auto max-w-lg text-lg text-muted">
-            Discover any city through your unique lens. Answer a few questions,
-            get a personalized guide powered by local knowledge.
+            Connect your music, maps, and social data — we&apos;ll build your
+            travel personality and create a city guide just for you.
           </p>
         </div>
 
-        <button
-          onClick={() => setAppState("quiz")}
-          className="mb-8 rounded-2xl bg-accent px-8 py-4 text-lg font-semibold text-white transition-all hover:scale-105 hover:bg-accent-hover"
-        >
-          Start Your Taste Quiz →
-        </button>
-
-        <div className="mt-4 flex flex-col items-center gap-3 text-sm text-muted">
-          <span>⏱️ Takes about 60 seconds</span>
-          <div className="flex items-center gap-2">
-            <span className="h-2 w-2 rounded-full bg-accent/50" />
-            <span>Powered by RAG + Pinecone + OpenAI</span>
-          </div>
-        </div>
-
-        {/* Admin: Ingest Panel */}
-        <div className="mt-12 w-full max-w-md">
-          <IngestPanel status={ingestStatus} onIngest={startIngestion} />
-        </div>
-      </div>
-    );
-  }
-
-  // ── Quiz ──
-  if (appState === "quiz") {
-    return (
-      <div className="flex min-h-screen flex-col justify-center py-12">
-        <QuizStep
-          step={QUIZ_STEPS[quizStep]}
-          selected={answers[QUIZ_STEPS[quizStep].id] || null}
-          onSelect={handleQuizSelect}
-          stepIndex={quizStep}
-          totalSteps={QUIZ_STEPS.length}
-        />
-        {quizStep > 0 && (
-          <button
-            onClick={() => setQuizStep(quizStep - 1)}
-            className="mx-auto mt-6 text-sm text-muted hover:text-foreground"
-          >
-            ← Back
-          </button>
-        )}
-      </div>
-    );
-  }
-
-  // ── Profile ──
-  if (appState === "profile") {
-    return (
-      <div className="flex min-h-screen flex-col justify-center py-12">
-        {profileLoading ? (
-          <div className="text-center">
-            <div className="mb-4 text-5xl">🔮</div>
-            <p className="text-lg text-muted">
-              Analyzing your travel DNA <LoadingDots />
-            </p>
-          </div>
-        ) : (
-          <>
-            <ProfileCard
-              profile={enhancedProfile || profile}
-              quizAnswers={answers}
-              enhanced={!!enhancedProfile}
-              dataSources={uploadedSources}
-            />
-
-            <div className="mx-auto mt-8 text-center">
-              <p className="mb-4 text-muted">Does this look right?</p>
-              <div className="flex flex-wrap gap-3 justify-center">
-                <button
-                  onClick={() => setAppState("city-select")}
-                  className="rounded-xl bg-accent px-6 py-3 font-semibold text-white transition-all hover:scale-105 hover:bg-accent-hover"
-                >
-                  That&apos;s me! Pick a city →
-                </button>
-                <button
-                  onClick={() => setAppState("enhance")}
-                  className="rounded-xl border border-accent/50 bg-accent/10 px-6 py-3 font-semibold text-accent transition-all hover:bg-accent/20"
-                >
-                  🔗 Connect Your Data
-                </button>
-                <button
-                  onClick={() => {
-                    setQuizStep(0);
-                    setAnswers({});
-                    setEnhancedProfile("");
-                    setAppState("quiz");
-                  }}
-                  className="rounded-xl border border-border px-6 py-3 text-muted transition-colors hover:border-accent hover:text-foreground"
-                >
-                  Retake Quiz
-                </button>
-              </div>
-            </div>
-          </>
-        )}
-      </div>
-    );
-  }
-
-  // ── Enhance Profile with Data ──
-  if (appState === "enhance") {
-    return (
-      <div className="flex min-h-screen flex-col justify-center py-12">
+        {/* Data Upload */}
         <DataUpload
           userId={userId}
           onUserIdChange={(id) => setUserId(id)}
@@ -587,42 +228,83 @@ export default function Home() {
               return next;
             });
           }}
+          onAllDemoLoaded={() => {
+            // Auto-advance after demo loads
+          }}
         />
 
-        <div className="mx-auto mt-8 flex flex-wrap gap-3 justify-center">
-          {uploadedSources.length > 0 && (
+        {/* Continue button */}
+        {uploadedSources.length > 0 && (
+          <div className="mt-8 text-center fade-in">
             <button
-              onClick={async () => {
-                await handleEnhanceProfile();
-                setAppState("profile");
-              }}
-              className="rounded-xl bg-accent px-6 py-3 font-semibold text-white transition-all hover:scale-105 hover:bg-accent-hover"
+              onClick={handleContinue}
+              disabled={profileLoading}
+              className="rounded-2xl bg-accent px-8 py-4 text-lg font-semibold text-white transition-all hover:scale-105 hover:bg-accent-hover disabled:opacity-50"
             >
-              ✨ Generate Enhanced Profile
+              {profileLoading ? (
+                <span className="inline-flex items-center gap-2">
+                  <span className="inline-block h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent" />
+                  Analyzing your taste...
+                </span>
+              ) : (
+                "Continue — Where are you going? →"
+              )}
             </button>
-          )}
-          <button
-            onClick={() => setAppState("profile")}
-            className="rounded-xl border border-border px-6 py-3 text-muted transition-colors hover:border-accent hover:text-foreground"
-          >
-            {uploadedSources.length > 0 ? "Skip Enhancement" : "← Back to Profile"}
-          </button>
+          </div>
+        )}
+
+        {/* Tech stack + ingest (subtle) */}
+        <div className="mt-12 flex flex-col items-center gap-3 text-sm text-muted">
+          <div className="flex items-center gap-2">
+            <span className="h-2 w-2 rounded-full bg-accent/50" />
+            <span>Powered by RAG + Pinecone + OpenAI</span>
+          </div>
+        </div>
+
+        <div className="mt-6 w-full max-w-md">
+          <IngestPanel status={ingestStatus} onIngest={startIngestion} />
         </div>
       </div>
     );
   }
 
-  // ── City Selection ──
-  if (appState === "city-select") {
+  // ── Page 2: Where are you going? ──
+  if (appState === "destination") {
     return (
       <div className="flex min-h-screen flex-col justify-center py-12">
         <div className="fade-in mx-auto max-w-2xl px-4">
+          {/* Profile summary */}
+          {profile && (
+            <div className="mb-8 rounded-2xl border border-accent/30 bg-accent/5 p-6 text-center">
+              <div className="mb-2 flex flex-wrap items-center justify-center gap-2">
+                <span className="text-xl">✨</span>
+                <span className="text-sm font-semibold text-accent">
+                  Your Travel DNA
+                </span>
+                {uploadedSources.map((src) => (
+                  <span
+                    key={src}
+                    className="rounded-full bg-accent/10 px-2 py-0.5 text-[10px] text-accent"
+                  >
+                    {{ spotify: "🎵", youtube: "📺", google_maps: "📍", instagram: "📸" }[src] || "📊"}{" "}
+                    {src.replace("_", " ")}
+                  </span>
+                ))}
+              </div>
+              <p className="text-sm leading-relaxed text-foreground/80">
+                {profile}
+              </p>
+            </div>
+          )}
+
+          {/* City selection */}
           <div className="mb-8 text-center">
             <h2 className="mb-2 text-3xl font-bold">
               Where are you <span className="gradient-text">headed</span>?
             </h2>
             <p className="text-muted">
-              Pick a city and we&apos;ll create your personalized guide
+              Pick a city and we&apos;ll create your personalized guide with
+              an interactive map
             </p>
           </div>
 
@@ -665,6 +347,33 @@ export default function Home() {
               <IngestPanel status={ingestStatus} onIngest={startIngestion} />
             </div>
           )}
+
+          {/* Back button */}
+          <div className="mt-8 text-center">
+            <button
+              onClick={() => setAppState("connect")}
+              className="text-sm text-muted hover:text-foreground"
+            >
+              ← Back to data upload
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // ── Generating (brief transition) ──
+  if (appState === "generating") {
+    return (
+      <div className="flex min-h-screen flex-col items-center justify-center px-4">
+        <div className="text-center">
+          <div className="mb-6 text-6xl">🗺️</div>
+          <h2 className="mb-3 text-2xl font-bold">
+            Building your guide <LoadingDots />
+          </h2>
+          <p className="text-muted">
+            Searching local knowledge and matching with your profile...
+          </p>
         </div>
       </div>
     );

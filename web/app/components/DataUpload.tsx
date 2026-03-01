@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useRef } from "react";
+import { useState } from "react";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001";
 
@@ -10,7 +10,7 @@ interface UploadSource {
   emoji: string;
   description: string;
   accept: string;
-  sampleFile?: string;
+  sampleFile: string;
 }
 
 const SOURCES: UploadSource[] = [
@@ -18,7 +18,7 @@ const SOURCES: UploadSource[] = [
     id: "spotify",
     label: "Spotify",
     emoji: "🎵",
-    description: "Listening history & top artists (JSON from Spotify privacy export)",
+    description: "Listening history & top artists",
     accept: ".json",
     sampleFile: "spotify-history.json",
   },
@@ -26,7 +26,7 @@ const SOURCES: UploadSource[] = [
     id: "youtube",
     label: "YouTube",
     emoji: "📺",
-    description: "Subscriptions & watch history (JSON from Google Takeout)",
+    description: "Subscriptions & watch history",
     accept: ".json",
     sampleFile: "youtube-subscriptions.json",
   },
@@ -34,7 +34,7 @@ const SOURCES: UploadSource[] = [
     id: "google_maps",
     label: "Google Maps",
     emoji: "📍",
-    description: "Saved & starred places (JSON from Google Takeout)",
+    description: "Saved & starred places",
     accept: ".json",
     sampleFile: "maps-saved-places.json",
   },
@@ -42,7 +42,7 @@ const SOURCES: UploadSource[] = [
     id: "instagram",
     label: "Instagram",
     emoji: "📸",
-    description: "Liked posts & saved content (JSON from Instagram data export)",
+    description: "Liked & saved posts",
     accept: ".json",
     sampleFile: "instagram-likes.json",
   },
@@ -57,20 +57,45 @@ interface UploadResult {
 
 interface DataUploadProps {
   userId: string;
-  onUploadComplete: (result: UploadResult) => void;
   onUserIdChange: (userId: string) => void;
+  onUploadComplete: (result: UploadResult) => void;
+  onAllDemoLoaded?: () => void;
 }
 
 export default function DataUpload({
   userId,
-  onUploadComplete,
   onUserIdChange,
+  onUploadComplete,
+  onAllDemoLoaded,
 }: DataUploadProps) {
   const [uploading, setUploading] = useState<string | null>(null);
   const [uploaded, setUploaded] = useState<Record<string, UploadResult>>({});
   const [error, setError] = useState<string | null>(null);
-  const fileInputRef = useRef<HTMLInputElement>(null);
-  const [activeSource, setActiveSource] = useState<string | null>(null);
+  const [demoLoading, setDemoLoading] = useState(false);
+
+  const uploadSource = async (
+    source: string,
+    data: any,
+    currentUserId: string
+  ): Promise<{ result: UploadResult; user_id: string }> => {
+    const res = await fetch(`${API_URL}/api/profile/upload`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        source,
+        data,
+        user_id: currentUserId || undefined,
+      }),
+    });
+
+    if (!res.ok) {
+      const err = await res.json();
+      throw new Error(err.detail || "Upload failed");
+    }
+
+    const result = await res.json();
+    return { result, user_id: result.user_id };
+  };
 
   const handleFileUpload = async (source: string, file: File) => {
     setUploading(source);
@@ -79,38 +104,15 @@ export default function DataUpload({
     try {
       const text = await file.text();
       const data = JSON.parse(text);
+      const { result, user_id } = await uploadSource(source, data, userId);
 
-      const res = await fetch(`${API_URL}/api/profile/upload`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          source,
-          data,
-          user_id: userId || undefined,
-        }),
-      });
-
-      if (!res.ok) {
-        const err = await res.json();
-        throw new Error(err.detail || "Upload failed");
-      }
-
-      const result = await res.json();
-
-      // Update userId if this is the first upload
-      if (!userId && result.user_id) {
-        onUserIdChange(result.user_id);
-      }
-
+      if (!userId && user_id) onUserIdChange(user_id);
       setUploaded((prev) => ({ ...prev, [source]: result }));
       onUploadComplete(result);
     } catch (err) {
-      setError(
-        err instanceof Error ? err.message : "Failed to upload"
-      );
+      setError(err instanceof Error ? err.message : "Failed to upload");
     } finally {
       setUploading(null);
-      setActiveSource(null);
     }
   };
 
@@ -119,47 +121,58 @@ export default function DataUpload({
     setError(null);
 
     try {
-      // Fetch sample file from our data directory via API
       const sampleFile = SOURCES.find((s) => s.id === source)?.sampleFile;
-      if (!sampleFile) throw new Error("No sample file available");
+      if (!sampleFile) throw new Error("No sample file");
 
-      // Load sample data directly
       const sampleRes = await fetch(`/sample-data/${sampleFile}`);
-      if (!sampleRes.ok) {
-        // If direct fetch fails, try via the API
-        throw new Error("Sample file not found at /sample-data/");
-      }
+      if (!sampleRes.ok) throw new Error("Sample file not found");
       const data = await sampleRes.json();
 
-      const res = await fetch(`${API_URL}/api/profile/upload`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          source,
-          data,
-          user_id: userId || undefined,
-        }),
-      });
+      const { result, user_id } = await uploadSource(source, data, userId);
 
-      if (!res.ok) {
-        const err = await res.json();
-        throw new Error(err.detail || "Upload failed");
-      }
-
-      const result = await res.json();
-
-      if (!userId && result.user_id) {
-        onUserIdChange(result.user_id);
-      }
-
+      if (!userId && user_id) onUserIdChange(user_id);
       setUploaded((prev) => ({ ...prev, [source]: result }));
       onUploadComplete(result);
     } catch (err) {
-      setError(
-        err instanceof Error ? err.message : "Failed to load sample"
-      );
+      setError(err instanceof Error ? err.message : "Failed to load sample");
     } finally {
       setUploading(null);
+    }
+  };
+
+  const handleTryDemo = async () => {
+    setDemoLoading(true);
+    setError(null);
+    let currentUserId = userId;
+
+    try {
+      for (const source of SOURCES) {
+        if (uploaded[source.id]) continue; // skip already uploaded
+
+        const sampleRes = await fetch(`/sample-data/${source.sampleFile}`);
+        if (!sampleRes.ok) continue;
+        const data = await sampleRes.json();
+
+        const { result, user_id } = await uploadSource(
+          source.id,
+          data,
+          currentUserId
+        );
+
+        if (!currentUserId && user_id) {
+          currentUserId = user_id;
+          onUserIdChange(user_id);
+        }
+
+        setUploaded((prev) => ({ ...prev, [source.id]: result }));
+        onUploadComplete(result);
+      }
+
+      if (onAllDemoLoaded) onAllDemoLoaded();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Demo loading failed");
+    } finally {
+      setDemoLoading(false);
     }
   };
 
@@ -167,21 +180,46 @@ export default function DataUpload({
     (sum, r) => sum + r.chunks_stored,
     0
   );
+  const allUploaded = SOURCES.every((s) => s.id in uploaded);
 
   return (
     <div className="fade-in mx-auto max-w-2xl px-4">
-      <div className="mb-6 text-center">
-        <h3 className="mb-2 text-xl font-bold">
-          <span className="gradient-text">Enhance</span> Your Profile
-        </h3>
-        <p className="text-sm text-muted">
-          Connect your data for hyper-personalized recommendations.
-          Upload real exports or try with sample data.
+      <div className="mb-8 text-center">
+        <div className="mb-4 text-6xl">🔗</div>
+        <h2 className="mb-3 text-3xl font-bold tracking-tight">
+          Connect Your <span className="gradient-text">Data</span>
+        </h2>
+        <p className="mx-auto max-w-md text-muted">
+          We analyze your digital footprint to understand your travel personality.
+          Upload your data exports or try a demo.
         </p>
       </div>
 
-      {/* Upload cards */}
-      <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+      {/* Try Demo button (prominent) */}
+      {!allUploaded && (
+        <div className="mb-6 text-center">
+          <button
+            onClick={handleTryDemo}
+            disabled={demoLoading}
+            className="rounded-2xl bg-accent px-8 py-4 text-lg font-semibold text-white transition-all hover:scale-105 hover:bg-accent-hover disabled:opacity-50"
+          >
+            {demoLoading ? (
+              <span className="inline-flex items-center gap-2">
+                <span className="inline-block h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent" />
+                Loading demo data...
+              </span>
+            ) : (
+              "🚀 Try Demo — Load Sample Data"
+            )}
+          </button>
+          <p className="mt-2 text-xs text-muted">
+            Loads sample Spotify, YouTube, Maps & Instagram data instantly
+          </p>
+        </div>
+      )}
+
+      {/* Source cards */}
+      <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
         {SOURCES.map((source) => {
           const isUploaded = source.id in uploaded;
           const isUploading = uploading === source.id;
@@ -190,39 +228,26 @@ export default function DataUpload({
           return (
             <div
               key={source.id}
-              className={`rounded-xl border p-4 transition-all ${
+              className={`rounded-xl border p-4 text-center transition-all ${
                 isUploaded
                   ? "border-success/50 bg-success/5"
-                  : "border-border bg-card hover:border-accent/30"
+                  : "border-border bg-card"
               }`}
             >
-              <div className="mb-2 flex items-center gap-2">
-                <span className="text-2xl">{source.emoji}</span>
-                <span className="font-semibold">{source.label}</span>
-                {isUploaded && (
-                  <span className="ml-auto text-xs text-success">
-                    ✓ {result.chunks_stored} signals
-                  </span>
-                )}
-              </div>
-              <p className="mb-3 text-xs text-muted">{source.description}</p>
+              <div className="mb-2 text-3xl">{source.emoji}</div>
+              <div className="mb-1 text-sm font-semibold">{source.label}</div>
 
               {isUploading ? (
-                <div className="flex items-center gap-2 text-sm text-accent">
+                <div className="flex items-center justify-center gap-1 text-xs text-accent">
                   <span className="inline-block h-3 w-3 animate-spin rounded-full border-2 border-accent border-t-transparent" />
-                  Processing...
                 </div>
               ) : isUploaded ? (
-                <div className="space-y-1">
-                  {result.signals?.slice(0, 2).map((sig, i) => (
-                    <p key={i} className="text-xs text-muted">
-                      • {sig.preview.slice(0, 80)}...
-                    </p>
-                  ))}
+                <div className="text-xs text-success">
+                  ✓ {result.chunks_stored} signals
                 </div>
               ) : (
-                <div className="flex gap-2">
-                  <label className="cursor-pointer rounded-lg border border-border px-3 py-1.5 text-xs font-medium text-muted transition-colors hover:border-accent hover:text-foreground">
+                <div className="flex flex-col gap-1.5">
+                  <label className="cursor-pointer rounded-lg border border-border px-2 py-1 text-[10px] font-medium text-muted transition-colors hover:border-accent hover:text-foreground">
                     Upload JSON
                     <input
                       type="file"
@@ -236,9 +261,9 @@ export default function DataUpload({
                   </label>
                   <button
                     onClick={() => handleUseSample(source.id)}
-                    className="rounded-lg bg-accent/10 px-3 py-1.5 text-xs font-medium text-accent transition-colors hover:bg-accent/20"
+                    className="rounded-lg bg-accent/10 px-2 py-1 text-[10px] font-medium text-accent transition-colors hover:bg-accent/20"
                   >
-                    Use Sample
+                    Sample
                   </button>
                 </div>
               )}
@@ -257,24 +282,17 @@ export default function DataUpload({
       {totalChunks > 0 && (
         <div className="mt-4 rounded-xl border border-accent/30 bg-accent/5 p-4 text-center">
           <p className="text-sm">
-            <span className="font-semibold text-accent">{totalChunks} preference signals</span>
-            {" "}extracted from{" "}
+            <span className="font-semibold text-accent">
+              {totalChunks} preference signals
+            </span>{" "}
+            from{" "}
             <span className="font-semibold">
-              {Object.keys(uploaded).length} source{Object.keys(uploaded).length > 1 ? "s" : ""}
+              {Object.keys(uploaded).length} source
+              {Object.keys(uploaded).length > 1 ? "s" : ""}
             </span>
-          </p>
-          <p className="mt-1 text-xs text-muted">
-            Your guide will use dual-corpus RAG: city knowledge + your personal data
           </p>
         </div>
       )}
-
-      <input
-        ref={fileInputRef}
-        type="file"
-        className="hidden"
-        accept=".json"
-      />
     </div>
   );
 }

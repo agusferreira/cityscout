@@ -1,10 +1,10 @@
 """
 CityScout — Personalized city guides powered by RAG.
 FastAPI backend with Pinecone vector search, OpenAI embeddings & generation,
-multi-source user data upload, dual-corpus RAG, and RAGAS evaluation.
+multi-source user data upload, dual-corpus RAG, chat agent, and RAGAS evaluation.
 """
 
-import json, os, re, time, threading, glob, uuid
+import json, os, re, time, threading, uuid
 from pathlib import Path
 
 from dotenv import load_dotenv
@@ -20,10 +20,12 @@ from prompts import (
     PROFILE_USER_TEMPLATE,
     GUIDE_SYSTEM_PROMPT,
     GUIDE_USER_TEMPLATE,
-    ENHANCED_PROFILE_SYSTEM_PROMPT,
-    ENHANCED_PROFILE_USER_TEMPLATE,
     ENHANCED_GUIDE_SYSTEM_PROMPT,
     ENHANCED_GUIDE_USER_TEMPLATE,
+    DATA_PROFILE_SYSTEM_PROMPT,
+    DATA_PROFILE_USER_TEMPLATE,
+    CHAT_SYSTEM_PROMPT,
+    CHAT_USER_TEMPLATE,
 )
 from parsers import parse_user_data, PARSERS
 
@@ -80,16 +82,24 @@ class GuideRequest(BaseModel):
     profile: str
     city: str
     top_k: int = 8
-    user_id: Optional[str] = None  # If set, also query user namespace for dual-corpus RAG
+    user_id: Optional[str] = None
 
 
 class UserDataUpload(BaseModel):
-    source: str   # "spotify" | "youtube" | "google_maps" | "instagram"
-    data: dict    # Raw export JSON
-    user_id: Optional[str] = None  # Auto-generated if not provided
+    source: str  # "spotify" | "youtube" | "google_maps" | "instagram"
+    data: dict
+    user_id: Optional[str] = None
 
 
-# In-memory user data store (maps user_id → uploaded source info)
+class ChatRequest(BaseModel):
+    message: str
+    city: str
+    profile: str
+    user_id: Optional[str] = None
+    history: list[dict] = []  # [{"role": "user"|"assistant", "content": "..."}]
+
+
+# In-memory user data store
 user_data_store: dict[str, dict] = {}
 
 
@@ -111,31 +121,91 @@ def get_available_cities() -> list[dict]:
         except Exception:
             chunk_count = 0
             categories = []
-        cities.append(
-            {
-                "slug": slug,
-                "name": name,
-                "chunk_count": chunk_count,
-                "categories": categories,
-            }
-        )
+        cities.append({
+            "slug": slug,
+            "name": name,
+            "chunk_count": chunk_count,
+            "categories": categories,
+        })
     return cities
 
 
+def get_city_center(city_slug: str) -> dict:
+    """Return center lat/lng for a city (for map initialization)."""
+    centers = {
+        "buenos-aires": {"lat": -34.6037, "lng": -58.3816, "zoom": 13},
+        "barcelona": {"lat": 41.3874, "lng": 2.1686, "zoom": 13},
+        "lisbon": {"lat": 38.7169, "lng": -9.1399, "zoom": 13},
+    }
+    return centers.get(city_slug, {"lat": 0, "lng": 0, "zoom": 12})
+
+
+def get_city_venues(city_slug: str) -> list[dict]:
+    """Load all venues with coordinates from a city data file."""
+    fp = CITIES_DIR / f"{city_slug}.json"
+    if not fp.exists():
+        return []
+    data = json.loads(fp.read_text())
+    venues = []
+    for item in data:
+        # Support old format: venues array inside each chunk
+        for venue in item.get("venues", []):
+            venues.append({
+                **venue,
+                "category": item.get("category", "general"),
+                "chunk_id": item.get("id", ""),
+                "source_type": item.get("source_type", ""),
+                "source_url": item.get("source_url", ""),
+            })
+        # Support new format: coordinates + venue_name at top level
+        coords = item.get("coordinates")
+        venue_name = item.get("venue_name")
+        if coords and venue_name:
+            venues.append({
+                "name": venue_name,
+                "lat": coords["lat"],
+                "lng": coords["lng"],
+                "category": item.get("category", "general"),
+                "chunk_id": item.get("id", ""),
+                "source_type": item.get("source_type", ""),
+                "source_url": item.get("source_url", ""),
+                "why": item.get("text", "")[:200],
+            })
+    return venues
+
+
+def parse_venue_lines(text: str) -> list[dict]:
+    """Parse VENUE: lines from LLM chat responses."""
+    venues = []
+    for line in text.split("\n"):
+        line = line.strip()
+        if line.startswith("VENUE:"):
+            parts = line[6:].strip().split("|")
+            if len(parts) >= 5:
+                try:
+                    venues.append({
+                        "name": parts[0].strip(),
+                        "category": parts[1].strip(),
+                        "lat": float(parts[2].strip()),
+                        "lng": float(parts[3].strip()),
+                        "why": parts[4].strip(),
+                    })
+                except (ValueError, IndexError):
+                    pass
+    return venues
+
+
 def embed_text(text: str) -> list[float]:
-    """Create an embedding vector for a single text string."""
     resp = openai_client.embeddings.create(model=EMBEDDING_MODEL, input=text)
     return resp.data[0].embedding
 
 
 def embed_batch(texts: list[str]) -> list[list[float]]:
-    """Create embedding vectors for a batch of texts."""
     resp = openai_client.embeddings.create(model=EMBEDDING_MODEL, input=texts)
     return [d.embedding for d in resp.data]
 
 
 def chunk_text(text: str, max_words: int = 400, overlap: int = 50) -> list[str]:
-    """Split text into overlapping word-level chunks if needed."""
     words = text.split()
     if len(words) <= max_words:
         return [text] if words else []
@@ -155,49 +225,152 @@ def load_city_data(city_slug: str) -> list[dict]:
     chunks = []
     for item in raw:
         text = item.get("text", "")
+        # Support old format (venues array) and new format (coordinates + venue_name)
+        venues = item.get("venues", [])
+        coords = item.get("coordinates")
+        venue_name = item.get("venue_name")
+        if coords and venue_name and not venues:
+            venues = [{"name": venue_name, "lat": coords["lat"], "lng": coords["lng"], "neighborhood": ""}]
+        venues_text = ""
+        if venues:
+            venues_text = "\nVenues: " + ", ".join(
+                f"{v['name']} ({v.get('neighborhood', '')}, {v.get('lat', 0):.4f}/{v.get('lng', 0):.4f})"
+                for v in venues
+            )
+
         if len(text.split()) <= 500:
             embed_text_str = (
                 f"City: {item.get('city', '')}\n"
                 f"Category: {item.get('category', '')}\n"
                 f"Source: {item.get('source_type', '')} — {item.get('source_url', '')}\n\n"
-                f"{text}"
+                f"{text}{venues_text}"
             )
-            chunks.append(
-                {
-                    "id": item.get("id", f"{city_slug}-{len(chunks)}"),
-                    "text": embed_text_str,
+            chunks.append({
+                "id": item.get("id", f"{city_slug}-{len(chunks)}"),
+                "text": embed_text_str,
+                "metadata": {
+                    "city": item.get("city", city_slug),
+                    "category": item.get("category", "general"),
+                    "source_url": item.get("source_url", ""),
+                    "source_type": item.get("source_type", ""),
+                    "date": item.get("date", ""),
+                    "text": text[:3500],
+                    "venues_json": json.dumps(venues) if venues else "",
+                },
+            })
+        else:
+            for ci, c in enumerate(chunk_text(text)):
+                chunks.append({
+                    "id": f"{item.get('id', city_slug)}-{ci}",
+                    "text": (
+                        f"City: {item.get('city', '')}\n"
+                        f"Category: {item.get('category', '')}\n"
+                        f"Source: {item.get('source_type', '')} — {item.get('source_url', '')}\n\n"
+                        f"{c}{venues_text if ci == 0 else ''}"
+                    ),
                     "metadata": {
                         "city": item.get("city", city_slug),
                         "category": item.get("category", "general"),
                         "source_url": item.get("source_url", ""),
                         "source_type": item.get("source_type", ""),
                         "date": item.get("date", ""),
-                        "text": text[:3500],
+                        "text": c[:3500],
+                        "venues_json": json.dumps(venues) if venues and ci == 0 else "",
                     },
-                }
-            )
-        else:
-            for ci, c in enumerate(chunk_text(text)):
-                chunks.append(
-                    {
-                        "id": f"{item.get('id', city_slug)}-{ci}",
-                        "text": (
-                            f"City: {item.get('city', '')}\n"
-                            f"Category: {item.get('category', '')}\n"
-                            f"Source: {item.get('source_type', '')} — {item.get('source_url', '')}\n\n"
-                            f"{c}"
-                        ),
-                        "metadata": {
-                            "city": item.get("city", city_slug),
-                            "category": item.get("category", "general"),
-                            "source_url": item.get("source_url", ""),
-                            "source_type": item.get("source_type", ""),
-                            "date": item.get("date", ""),
-                            "text": c[:3500],
-                        },
-                    }
-                )
+                })
     return chunks
+
+
+# ── Dual-corpus retrieval helper ──
+
+
+def retrieve_context(profile: str, city: str, top_k: int = 8, user_id: str | None = None):
+    """
+    Retrieve relevant context from city corpus and optionally user corpus.
+    Returns: (city_sources, user_signals, all_venues)
+    """
+    city_slug = city.lower().replace(" ", "-")
+    query_text = f"Travel recommendations for someone with this taste profile: {profile}. City: {city}"
+    query_vec = embed_text(query_text)
+
+    idx = pc.Index(INDEX)
+
+    # City corpus query
+    results = idx.query(
+        vector=query_vec,
+        top_k=top_k,
+        include_metadata=True,
+        filter={"city": {"$eq": city_slug}},
+    )
+    all_matches = {m.id: m for m in results.matches}
+
+    # Category diversity queries
+    for cat in ["coffee", "food", "nightlife", "culture"]:
+        cat_query = f"{profile}. Best {cat} recommendations in {city}"
+        cat_vec = embed_text(cat_query)
+        try:
+            cat_results = idx.query(
+                vector=cat_vec,
+                top_k=3,
+                include_metadata=True,
+                filter={"city": {"$eq": city_slug}},
+            )
+            for m in cat_results.matches:
+                if m.id not in all_matches:
+                    all_matches[m.id] = m
+        except Exception:
+            pass
+
+    final_matches = sorted(all_matches.values(), key=lambda m: m.score, reverse=True)
+
+    # Build sources list + extract venue coordinates
+    sources = []
+    all_venues = []
+    for m in final_matches:
+        venues_json = m.metadata.get("venues_json", "")
+        venues = json.loads(venues_json) if venues_json else []
+        category = m.metadata.get("category", "")
+        for v in venues:
+            v["category"] = category
+            v["source_url"] = m.metadata.get("source_url", "")
+            v["source_type"] = m.metadata.get("source_type", "")
+            all_venues.append(v)
+
+        sources.append({
+            "score": m.score,
+            "text": m.metadata.get("text", ""),
+            "category": category,
+            "source_url": m.metadata.get("source_url", ""),
+            "source_type": m.metadata.get("source_type", ""),
+            "city": m.metadata.get("city", ""),
+            "date": m.metadata.get("date", ""),
+            "venues": venues,
+        })
+
+    # User corpus query (if available)
+    user_signals = []
+    has_user_data = user_id and user_id in user_data_store
+    if has_user_data:
+        user_namespace = f"user_{user_id}"
+        try:
+            user_results = idx.query(
+                vector=query_vec,
+                top_k=10,
+                include_metadata=True,
+                namespace=user_namespace,
+            )
+            for m in user_results.matches:
+                user_signals.append({
+                    "score": m.score,
+                    "text": m.metadata.get("text", ""),
+                    "signal_type": m.metadata.get("signal_type", ""),
+                    "category": m.metadata.get("category", ""),
+                    "source_type": m.metadata.get("source_type", ""),
+                })
+        except Exception as e:
+            print(f"  → User namespace query failed: {e}")
+
+    return sources, user_signals, all_venues
 
 
 # ── RAGAS Evaluation ──
@@ -206,52 +379,33 @@ _ragas_cache = {}
 
 
 def get_ragas_evaluator():
-    """Lazy-init RAGAS evaluator (reused across requests)."""
     if not _ragas_cache:
         from ragas.llms import llm_factory
         from ragas.embeddings import embedding_factory
-
         _ragas_cache["llm"] = llm_factory("gpt-4o-mini")
         _ragas_cache["emb"] = embedding_factory("text-embedding-3-small")
-        print("[ragas] Evaluator initialized (gpt-4o-mini + text-embedding-3-small)")
     return _ragas_cache["llm"], _ragas_cache["emb"]
 
 
 def score_with_ragas(question: str, answer: str, contexts: list[str]) -> dict:
-    """Evaluate a RAG result with RAGAS metrics."""
     from ragas import SingleTurnSample, EvaluationDataset, evaluate
     from ragas.metrics import Faithfulness, LLMContextPrecisionWithoutReference, ResponseRelevancy
 
     evaluator_llm, evaluator_emb = get_ragas_evaluator()
-
-    sample = SingleTurnSample(
-        user_input=question,
-        response=answer,
-        retrieved_contexts=contexts,
-    )
+    sample = SingleTurnSample(user_input=question, response=answer, retrieved_contexts=contexts)
     result = evaluate(
         dataset=EvaluationDataset(samples=[sample]),
-        metrics=[
-            Faithfulness(),
-            LLMContextPrecisionWithoutReference(),
-            ResponseRelevancy(),
-        ],
+        metrics=[Faithfulness(), LLMContextPrecisionWithoutReference(), ResponseRelevancy()],
         llm=evaluator_llm,
         embeddings=evaluator_emb,
     )
-
     df = result.to_pandas()
     precision_col = next((c for c in df.columns if "precision" in c.lower()), None)
     relevancy_col = next((c for c in df.columns if "relevancy" in c.lower()), None)
-
     return {
         "faithfulness": round(float(df["faithfulness"].iloc[0]), 3),
-        "context_precision": (
-            round(float(df[precision_col].iloc[0]), 3) if precision_col else None
-        ),
-        "relevancy": (
-            round(float(df[relevancy_col].iloc[0]), 3) if relevancy_col else None
-        ),
+        "context_precision": round(float(df[precision_col].iloc[0]), 3) if precision_col else None,
+        "relevancy": round(float(df[relevancy_col].iloc[0]), 3) if relevancy_col else None,
     }
 
 
@@ -269,7 +423,6 @@ def _score_label(val):
 
 
 def run_ingestion():
-    """Ingest all city data files into Pinecone."""
     global ingest_state
     try:
         ingest_state["phase"] = "loading"
@@ -295,9 +448,7 @@ def run_ingestion():
         if INDEX not in existing:
             print(f"[ingest] Creating Pinecone index '{INDEX}'...")
             pc.create_index(
-                name=INDEX,
-                dimension=1536,
-                metric="cosine",
+                name=INDEX, dimension=1536, metric="cosine",
                 spec=ServerlessSpec(cloud="aws", region="us-east-1"),
             )
             print("[ingest] Waiting for index to be ready...")
@@ -318,7 +469,6 @@ def run_ingestion():
                 {"id": c["id"], "values": emb, "metadata": c["metadata"]}
                 for c, emb in zip(batch, embeddings)
             ]
-
             idx.upsert(vectors=vectors)
             ingest_state["processed"] = min(i + batch_size, len(all_chunks))
             print(f"[ingest] {ingest_state['processed']}/{len(all_chunks)} vectors upserted")
@@ -334,7 +484,9 @@ def run_ingestion():
         ingest_state.update(phase="error", error=str(e), running=False)
 
 
-# ── Routes: Core ──
+# ═══════════════════════════════════════════
+# ROUTES
+# ═══════════════════════════════════════════
 
 
 @app.get("/api/health")
@@ -344,13 +496,16 @@ def health():
 
 @app.get("/api/cities")
 def list_cities():
-    """Return list of available cities with metadata."""
-    return {"cities": get_available_cities()}
+    cities = get_available_cities()
+    # Add center coordinates for each city
+    for city in cities:
+        center = get_city_center(city["slug"])
+        city["center"] = center
+    return {"cities": cities}
 
 
 @app.post("/api/ingest")
 def ingest():
-    """Start background ingestion of all city data into Pinecone."""
     if ingest_state["running"]:
         raise HTTPException(409, "Ingestion already running")
     ingest_state.update(running=True, phase="loading", total=0, processed=0, error=None)
@@ -363,27 +518,17 @@ def ingestion_status():
     return ingest_state
 
 
-# ── Routes: Profile (quiz-only) ──
+# ── Profile from quiz (legacy, kept for compatibility) ──
 
 
 @app.post("/api/profile")
 def generate_profile(req: ProfileRequest):
-    """Generate a taste profile from quiz answers using LLM."""
     t_start = time.time()
-    print(f"\n{'='*70}")
-    print(f"[profile] Generating taste profile from quiz answers")
-    print(f"{'─'*70}")
-
     answers = req.quiz_answers
     user_prompt = PROFILE_USER_TEMPLATE.format(
-        coffee=answers.coffee,
-        food=answers.food,
-        activity=answers.activity,
-        nightlife=answers.nightlife,
-        neighborhood=answers.neighborhood,
-        budget=answers.budget,
+        coffee=answers.coffee, food=answers.food, activity=answers.activity,
+        nightlife=answers.nightlife, neighborhood=answers.neighborhood, budget=answers.budget,
     )
-
     completion = openai_client.chat.completions.create(
         model=CHAT_MODEL,
         messages=[
@@ -393,13 +538,7 @@ def generate_profile(req: ProfileRequest):
         temperature=0.8,
         max_tokens=300,
     )
-
     profile = completion.choices[0].message.content.strip()
-    elapsed = time.time() - t_start
-    print(f"  → Profile: {profile[:100]}...")
-    print(f"  → Generated in {elapsed:.2f}s")
-    print(f"{'='*70}\n")
-
     return {
         "profile": profile,
         "usage": {
@@ -410,37 +549,23 @@ def generate_profile(req: ProfileRequest):
     }
 
 
-# ── Routes: User Data Upload ──
+# ── User Data Upload ──
 
 
 @app.post("/api/profile/upload")
 def upload_user_data(req: UserDataUpload):
-    """
-    Upload user data from external platforms (Spotify, YouTube, Maps, Instagram).
-    Parses the data, embeds it into Pinecone under a user-specific namespace,
-    and returns parsed signals summary.
-    """
     t_start = time.time()
-
-    # Validate source
     if req.source not in PARSERS:
         raise HTTPException(400, f"Unknown source: {req.source}. Valid: {list(PARSERS.keys())}")
 
-    # Generate or use provided user_id
     user_id = req.user_id or str(uuid.uuid4())[:8]
     namespace = f"user_{user_id}"
 
-    print(f"\n{'='*70}")
-    print(f"[upload] Processing {req.source} data for user {user_id}")
-    print(f"[upload] Namespace: {namespace}")
-    print(f"{'─'*70}")
+    print(f"\n[upload] Processing {req.source} for user {user_id}")
 
-    # Step 1: Parse
-    print(f"[1/3 PARSE] Extracting signals from {req.source}...")
     try:
         signal_chunks = parse_user_data(req.source, req.data)
     except Exception as e:
-        print(f"  → Parse error: {e}")
         raise HTTPException(400, f"Failed to parse {req.source} data: {str(e)}")
 
     print(f"  → Extracted {len(signal_chunks)} signal chunks")
@@ -455,37 +580,28 @@ def upload_user_data(req: UserDataUpload):
             "message": "No preference signals extracted from this data",
         }
 
-    # Step 2: Embed
-    print(f"[2/3 EMBED] Creating embeddings for {len(signal_chunks)} chunks...")
+    # Embed and store
     texts = [c["text"] for c in signal_chunks]
     embeddings = embed_batch(texts)
 
-    # Step 3: Store in Pinecone user namespace
-    print(f"[3/3 STORE] Upserting to Pinecone namespace '{namespace}'...")
-    try:
-        idx = pc.Index(INDEX)
-        vectors = []
-        for i, (chunk, emb) in enumerate(zip(signal_chunks, embeddings)):
-            vectors.append({
-                "id": f"{namespace}-{req.source}-{i}",
-                "values": emb,
-                "metadata": {
-                    "text": chunk["text"][:3500],
-                    "signal_type": chunk["metadata"]["signal_type"],
-                    "category": chunk["metadata"]["category"],
-                    "source_type": chunk["metadata"]["source_type"],
-                    "user_id": user_id,
-                },
-            })
+    idx = pc.Index(INDEX)
+    vectors = []
+    for i, (chunk, emb) in enumerate(zip(signal_chunks, embeddings)):
+        vectors.append({
+            "id": f"{namespace}-{req.source}-{i}",
+            "values": emb,
+            "metadata": {
+                "text": chunk["text"][:3500],
+                "signal_type": chunk["metadata"]["signal_type"],
+                "category": chunk["metadata"]["category"],
+                "source_type": chunk["metadata"]["source_type"],
+                "user_id": user_id,
+            },
+        })
 
-        idx.upsert(vectors=vectors, namespace=namespace)
-        print(f"  → Upserted {len(vectors)} vectors to namespace '{namespace}'")
+    idx.upsert(vectors=vectors, namespace=namespace)
 
-    except Exception as e:
-        print(f"  → Pinecone error: {e}")
-        raise HTTPException(500, f"Failed to store user data: {str(e)}")
-
-    # Track uploaded sources per user
+    # Track user data
     if user_id not in user_data_store:
         user_data_store[user_id] = {"sources": [], "chunk_count": 0, "signals": []}
     user_data_store[user_id]["sources"].append(req.source)
@@ -493,8 +609,7 @@ def upload_user_data(req: UserDataUpload):
     user_data_store[user_id]["signals"].extend(signal_chunks)
 
     elapsed = time.time() - t_start
-    print(f"  → Done in {elapsed:.2f}s")
-    print(f"{'='*70}\n")
+    print(f"  → Done in {elapsed:.2f}s, {len(vectors)} vectors stored")
 
     return {
         "user_id": user_id,
@@ -503,11 +618,8 @@ def upload_user_data(req: UserDataUpload):
         "signal_types": list(set(c["metadata"]["signal_type"] for c in signal_chunks)),
         "categories": list(set(c["metadata"]["category"] for c in signal_chunks)),
         "signals": [
-            {
-                "type": c["metadata"]["signal_type"],
-                "category": c["metadata"]["category"],
-                "preview": c["text"][:120],
-            }
+            {"type": c["metadata"]["signal_type"], "category": c["metadata"]["category"],
+             "preview": c["text"][:120]}
             for c in signal_chunks
         ],
     }
@@ -515,7 +627,6 @@ def upload_user_data(req: UserDataUpload):
 
 @app.get("/api/profile/user/{user_id}")
 def get_user_data_status(user_id: str):
-    """Get status of uploaded user data."""
     info = user_data_store.get(user_id)
     if not info:
         raise HTTPException(404, f"No data found for user {user_id}")
@@ -527,75 +638,56 @@ def get_user_data_status(user_id: str):
     }
 
 
-# ── Routes: Enhanced Profile (quiz + uploaded data) ──
+# ── Profile from uploaded data (NEW — no quiz needed) ──
 
 
-@app.post("/api/profile/enhance")
-def enhance_profile(req: dict):
+@app.post("/api/profile/generate")
+def generate_profile_from_data(req: dict):
     """
-    Generate an enhanced profile by combining quiz answers with uploaded user data signals.
-    Requires: quiz_answers (dict), user_id (str).
+    Generate a taste profile purely from uploaded user data signals.
+    No quiz needed — the connected data IS the profile.
     """
-    quiz_answers = req.get("quiz_answers", {})
     user_id = req.get("user_id")
-
     if not user_id or user_id not in user_data_store:
-        raise HTTPException(400, "No user data uploaded. Upload data first or use /api/profile.")
+        raise HTTPException(400, "No user data uploaded. Upload data first.")
 
     t_start = time.time()
-    print(f"\n{'='*70}")
-    print(f"[enhance] Generating enhanced profile for user {user_id}")
-    print(f"{'─'*70}")
+    print(f"\n[profile/generate] Generating profile from data for user {user_id}")
 
-    # Retrieve user signal chunks from Pinecone
-    namespace = f"user_{user_id}"
-    try:
-        idx = pc.Index(INDEX)
-        query_vec = embed_text("user preferences music food culture nightlife")
-        results = idx.query(
-            vector=query_vec,
-            top_k=20,
-            include_metadata=True,
-            namespace=namespace,
-        )
-        user_signals = [m.metadata.get("text", "") for m in results.matches]
-    except Exception as e:
-        print(f"  → Error fetching user signals: {e}")
-        user_signals = []
+    # Retrieve all user signal chunks
+    user_info = user_data_store[user_id]
+    signal_texts = [c["text"] for c in user_info["signals"]]
+    sources_used = list(set(user_info["sources"]))
 
-    print(f"  → Retrieved {len(user_signals)} user signal chunks")
+    if not signal_texts:
+        raise HTTPException(400, "No signals found in uploaded data")
 
-    user_prompt = ENHANCED_PROFILE_USER_TEMPLATE.format(
-        coffee=quiz_answers.get("coffee", "Not specified"),
-        food=quiz_answers.get("food", "Not specified"),
-        activity=quiz_answers.get("activity", "Not specified"),
-        nightlife=quiz_answers.get("nightlife", "Not specified"),
-        neighborhood=quiz_answers.get("neighborhood", "Not specified"),
-        budget=quiz_answers.get("budget", "Not specified"),
-        user_data_signals="\n".join(f"- {s}" for s in user_signals) if user_signals else "No additional data.",
+    user_prompt = DATA_PROFILE_USER_TEMPLATE.format(
+        sources=", ".join(sources_used),
+        signal_count=len(signal_texts),
+        signals="\n".join(f"- {s[:200]}" for s in signal_texts),
     )
 
     completion = openai_client.chat.completions.create(
         model=CHAT_MODEL,
         messages=[
-            {"role": "system", "content": ENHANCED_PROFILE_SYSTEM_PROMPT},
+            {"role": "system", "content": DATA_PROFILE_SYSTEM_PROMPT},
             {"role": "user", "content": user_prompt},
         ],
         temperature=0.8,
-        max_tokens=500,
+        max_tokens=400,
     )
 
     profile = completion.choices[0].message.content.strip()
     elapsed = time.time() - t_start
-    print(f"  → Enhanced profile: {profile[:100]}...")
+    print(f"  → Profile: {profile[:100]}...")
     print(f"  → Generated in {elapsed:.2f}s")
-    print(f"{'='*70}\n")
 
     return {
         "profile": profile,
-        "enhanced": True,
         "user_id": user_id,
-        "data_sources": list(set(user_data_store[user_id]["sources"])),
+        "data_sources": sources_used,
+        "signal_count": len(signal_texts),
         "usage": {
             "prompt_tokens": completion.usage.prompt_tokens,
             "completion_tokens": completion.usage.completion_tokens,
@@ -604,166 +696,47 @@ def enhance_profile(req: dict):
     }
 
 
-# ── Routes: Guide Generation (dual-corpus RAG) ──
+# ── Guide Generation (dual-corpus RAG) ──
 
 
 @app.post("/api/guide")
 def generate_guide(req: GuideRequest):
-    """
-    Main RAG pipeline with optional dual-corpus retrieval:
-    1. Embed user profile as query
-    2. Query Pinecone for city-specific knowledge (city corpus)
-    3. If user_id provided, also query user profile corpus (user namespace)
-    4. Generate personalized guide with citations
-    5. Evaluate with RAGAS
-    """
     t_start = time.time()
     has_user_data = req.user_id and req.user_id in user_data_store
+    city_slug = req.city.lower().replace(" ", "-")
+    city_name = req.city.replace("-", " ").title()
     print(f"\n{'='*70}")
-    print(f"[guide] Generating {'enhanced ' if has_user_data else ''}personalized guide")
-    print(f"[guide] City: {req.city} | top_k: {req.top_k} | user_id: {req.user_id or 'none'}")
-    print(f"[guide] Profile: {req.profile[:80]}...")
-    print(f"{'─'*70}")
+    print(f"[guide] Generating {'enhanced ' if has_user_data else ''}guide for {city_name}")
 
-    # ── Step 1: Embed query ──
-    query_text = f"Travel recommendations for someone with this taste profile: {req.profile}. City: {req.city}"
-    print("[1/5 EMBED] Creating query embedding...")
-    t1 = time.time()
-    query_vec = embed_text(query_text)
-    t_embed = time.time() - t1
-    print(f"  → Embedding: {t_embed:.2f}s | dim={len(query_vec)}")
+    # Retrieve context
+    sources, user_signals, all_venues = retrieve_context(
+        req.profile, req.city, req.top_k, req.user_id
+    )
 
-    # ── Step 2: Retrieve from city corpus ──
-    print(f"[2/5 RETRIEVE-CITY] Querying Pinecone index '{INDEX}'...")
-    t2 = time.time()
+    print(f"  → {len(sources)} city sources, {len(user_signals)} user signals, {len(all_venues)} venue pins")
 
-    try:
-        idx = pc.Index(INDEX)
-        results = idx.query(
-            vector=query_vec,
-            top_k=req.top_k,
-            include_metadata=True,
-            filter={"city": {"$eq": req.city.lower().replace(" ", "-")}},
-        )
-        matches = results.matches
-    except Exception as e:
-        print(f"  → Pinecone query failed: {e}")
-        raise HTTPException(500, f"Vector search failed: {str(e)}")
-
-    t_search = time.time() - t2
-    print(f"  → City search: {t_search:.2f}s | {len(matches)} chunks retrieved")
-
-    # Category-specific queries for diversity
-    all_matches = {m.id: m for m in matches}
-    for cat in ["coffee", "food", "nightlife", "culture"]:
-        cat_query = f"{req.profile}. Best {cat} recommendations in {req.city}"
-        cat_vec = embed_text(cat_query)
-        try:
-            cat_results = idx.query(
-                vector=cat_vec,
-                top_k=3,
-                include_metadata=True,
-                filter={"city": {"$eq": req.city.lower().replace(" ", "-")}},
-            )
-            for m in cat_results.matches:
-                if m.id not in all_matches:
-                    all_matches[m.id] = m
-        except Exception:
-            pass
-
-    final_matches = sorted(all_matches.values(), key=lambda m: m.score, reverse=True)
-    print(f"  → After diversity expansion: {len(final_matches)} unique city chunks")
-
-    # ── Step 3: Retrieve from user corpus (if available) ──
-    user_signals = []
-    t_user = 0.0
-    if has_user_data:
-        user_namespace = f"user_{req.user_id}"
-        print(f"[3/5 RETRIEVE-USER] Querying user namespace '{user_namespace}'...")
-        t3u = time.time()
-        try:
-            user_results = idx.query(
-                vector=query_vec,
-                top_k=10,
-                include_metadata=True,
-                namespace=user_namespace,
-            )
-            for m in user_results.matches:
-                user_signals.append({
-                    "score": m.score,
-                    "text": m.metadata.get("text", ""),
-                    "signal_type": m.metadata.get("signal_type", ""),
-                    "category": m.metadata.get("category", ""),
-                    "source_type": m.metadata.get("source_type", ""),
-                })
-            t_user = time.time() - t3u
-            print(f"  → User signals: {t_user:.2f}s | {len(user_signals)} chunks")
-            for i, s in enumerate(user_signals):
-                print(f"  [U{i+1}] score={s['score']:.4f} | {s['signal_type']}/{s['category']}")
-        except Exception as e:
-            t_user = time.time() - t3u
-            print(f"  → User namespace query failed: {e} (continuing without user data)")
-    else:
-        print("[3/5 RETRIEVE-USER] No user_id — skipping user corpus")
-
-    # Build city sources list
-    sources = []
-    total_ctx_chars = 0
-    print(f"  {'─'*66}")
-    for i, m in enumerate(final_matches):
-        text = m.metadata.get("text", "")
-        chars = len(text)
-        total_ctx_chars += chars
-        source = {
-            "score": m.score,
-            "text": text,
-            "category": m.metadata.get("category", ""),
-            "source_url": m.metadata.get("source_url", ""),
-            "source_type": m.metadata.get("source_type", ""),
-            "city": m.metadata.get("city", ""),
-            "date": m.metadata.get("date", ""),
-        }
-        sources.append(source)
-        print(f"  [{i+1}] score={m.score:.4f} | {chars:,} chars | cat={source['category']}")
-    print(f"  {'─'*66}")
-    print(f"  Total context: {total_ctx_chars:,} chars across {len(sources)} city chunks")
-
-    # ── Step 4: Generate guide ──
-    print(f"{'─'*70}")
-    print("[4/5 GENERATE] Sending to LLM...")
-
+    # Build context string
     context = "\n\n---\n\n".join(
         f"[{i+1}] Category: {s['category']} | Source: {s['source_type']} — {s['source_url']}\n{s['text']}"
         for i, s in enumerate(sources)
     )
 
-    # Choose prompt based on whether we have user data
+    # Choose prompt
     if has_user_data and user_signals:
         user_context = "\n\n".join(
             f"[{s['source_type'].upper()}] ({s['category']}/{s['signal_type']}): {s['text']}"
             for s in user_signals
         )
         user_prompt = ENHANCED_GUIDE_USER_TEMPLATE.format(
-            profile=req.profile,
-            city=req.city.replace("-", " ").title(),
-            context=context,
-            user_context=user_context,
+            profile=req.profile, city=city_name, context=context, user_context=user_context,
         )
         system_prompt = ENHANCED_GUIDE_SYSTEM_PROMPT
-        print(f"  → Using ENHANCED dual-corpus prompt (city + user data)")
     else:
         user_prompt = GUIDE_USER_TEMPLATE.format(
-            profile=req.profile,
-            city=req.city.replace("-", " ").title(),
-            context=context,
+            profile=req.profile, city=city_name, context=context,
         )
         system_prompt = GUIDE_SYSTEM_PROMPT
-        print(f"  → Using standard single-corpus prompt")
 
-    print(f"  → System prompt: {len(system_prompt)} chars")
-    print(f"  → User prompt: {len(user_prompt):,} chars")
-
-    t3 = time.time()
     completion = openai_client.chat.completions.create(
         model=CHAT_MODEL,
         messages=[
@@ -773,46 +746,29 @@ def generate_guide(req: GuideRequest):
         temperature=0.4,
         max_tokens=3000,
     )
-    t_gen = time.time() - t3
 
     guide = completion.choices[0].message.content
     tokens = completion.usage
-    print(f"  → LLM responded in {t_gen:.2f}s | model={CHAT_MODEL}")
-    print(f"  → Tokens: prompt={tokens.prompt_tokens:,} + completion={tokens.completion_tokens:,} = {tokens.total_tokens:,}")
-    print(f"  → Guide length: {len(guide):,} chars")
 
-    # ── Step 5: RAGAS Evaluation ──
-    print(f"{'─'*70}")
-    print("[5/5 RAGAS] Evaluating retrieval + generation quality...")
+    # RAGAS evaluation
     contexts_for_eval = [s["text"] for s in sources]
     if user_signals:
         contexts_for_eval.extend([s["text"] for s in user_signals])
 
-    t4 = time.time()
     try:
         scores = score_with_ragas(
-            f"Personalized {req.city} guide for: {req.profile[:200]}",
-            guide,
-            contexts_for_eval,
+            f"Personalized {city_name} guide for: {req.profile[:200]}",
+            guide, contexts_for_eval,
         )
-        t_ragas = time.time() - t4
-        print(f"  → Completed in {t_ragas:.2f}s")
-        print(f"  ┌────────────────────────────────────────────┐")
-        print(f"  │  Faithfulness:      {_score_label(scores['faithfulness']):>20} │")
-        print(f"  │  Context Precision: {_score_label(scores['context_precision']):>20} │")
-        print(f"  │  Relevancy:         {_score_label(scores['relevancy']):>20} │")
-        print(f"  └────────────────────────────────────────────┘")
     except Exception as e:
-        t_ragas = time.time() - t4
-        print(f"  → RAGAS evaluation failed in {t_ragas:.2f}s: {e}")
+        print(f"  → RAGAS failed: {e}")
         scores = {"error": str(e), "faithfulness": None, "context_precision": None, "relevancy": None}
 
-    # ── Summary ──
-    total = time.time() - t_start
-    print(f"{'─'*70}")
-    print(f"[summary] embed={t_embed:.2f}s → city_search={t_search:.2f}s → user_search={t_user:.2f}s → generate={t_gen:.2f}s → ragas={t_ragas:.2f}s")
-    print(f"[summary] Total: {total:.2f}s | {tokens.total_tokens:,} tokens | {len(sources)} city sources | {len(user_signals)} user signals")
-    print(f"{'='*70}\n")
+    # City center for map
+    center = get_city_center(city_slug)
+
+    elapsed = time.time() - t_start
+    print(f"  → Generated in {elapsed:.2f}s")
 
     return {
         "guide": guide,
@@ -821,6 +777,152 @@ def generate_guide(req: GuideRequest):
         "scores": scores,
         "city": req.city,
         "enhanced": bool(has_user_data and user_signals),
+        "venues": all_venues,
+        "map_center": center,
+        "usage": {
+            "prompt_tokens": tokens.prompt_tokens,
+            "completion_tokens": tokens.completion_tokens,
+            "total_tokens": tokens.total_tokens,
+        },
+    }
+
+
+# ── Chat Agent (conversational RAG) ──
+
+
+@app.post("/api/chat")
+def chat(req: ChatRequest):
+    """
+    Conversational RAG agent. Each message triggers a retrieval step
+    and the LLM has the full conversation history for context.
+    """
+    t_start = time.time()
+    city_slug = req.city.lower().replace(" ", "-")
+    city_name = req.city.replace("-", " ").title()
+    has_user_data = req.user_id and req.user_id in user_data_store
+
+    print(f"\n[chat] User: {req.message[:80]}...")
+    print(f"[chat] City: {city_name} | user_id: {req.user_id or 'none'} | history: {len(req.history)} msgs")
+
+    # Step 1: Embed user message for retrieval
+    search_query = f"{req.message}. City: {city_name}. User profile: {req.profile[:200]}"
+    query_vec = embed_text(search_query)
+
+    # Step 2: Retrieve relevant city knowledge
+    idx = pc.Index(INDEX)
+    try:
+        results = idx.query(
+            vector=query_vec,
+            top_k=6,
+            include_metadata=True,
+            filter={"city": {"$eq": city_slug}},
+        )
+        city_chunks = results.matches
+    except Exception as e:
+        print(f"  → City search failed: {e}")
+        city_chunks = []
+
+    # Step 3: Retrieve user signals (if available)
+    user_signal_texts = []
+    if has_user_data:
+        try:
+            user_results = idx.query(
+                vector=query_vec,
+                top_k=5,
+                include_metadata=True,
+                namespace=f"user_{req.user_id}",
+            )
+            user_signal_texts = [m.metadata.get("text", "") for m in user_results.matches]
+        except Exception:
+            pass
+
+    # Build context from retrieved chunks
+    context_parts = []
+    venues_in_response = []
+    for m in city_chunks:
+        text = m.metadata.get("text", "")
+        category = m.metadata.get("category", "")
+        source_url = m.metadata.get("source_url", "")
+        source_type = m.metadata.get("source_type", "")
+        context_parts.append(
+            f"[{category}] (Source: {source_type} — {source_url})\n{text}"
+        )
+        # Extract venues
+        venues_json = m.metadata.get("venues_json", "")
+        if venues_json:
+            try:
+                venues = json.loads(venues_json)
+                for v in venues:
+                    v["category"] = category
+                    v["source_url"] = source_url
+                    venues_in_response.append(v)
+            except json.JSONDecodeError:
+                pass
+
+    context = "\n\n---\n\n".join(context_parts) if context_parts else "No relevant local knowledge found."
+
+    user_signals_text = ""
+    if user_signal_texts:
+        user_signals_text = "\n\nUser's personal data signals:\n" + "\n".join(f"- {s}" for s in user_signal_texts)
+
+    # Step 4: Build messages list
+    system_prompt = CHAT_SYSTEM_PROMPT.format(city=city_name, profile=req.profile)
+
+    messages = [{"role": "system", "content": system_prompt}]
+
+    # Add conversation history
+    for msg in req.history[-10:]:  # Last 10 messages for context window management
+        messages.append({"role": msg["role"], "content": msg["content"]})
+
+    # Current user message with retrieval context
+    current_msg = CHAT_USER_TEMPLATE.format(
+        message=req.message,
+        context=context,
+        user_signals=user_signals_text,
+    )
+    messages.append({"role": "user", "content": current_msg})
+
+    # Step 5: Generate response
+    completion = openai_client.chat.completions.create(
+        model=CHAT_MODEL,
+        messages=messages,
+        temperature=0.5,
+        max_tokens=1500,
+    )
+
+    raw_response = completion.choices[0].message.content.strip()
+    tokens = completion.usage
+    elapsed = time.time() - t_start
+
+    # Parse VENUE lines from LLM response
+    parsed_venues = parse_venue_lines(raw_response)
+
+    # Clean VENUE lines from the displayed message
+    clean_lines = [
+        line for line in raw_response.split("\n")
+        if not line.strip().startswith("VENUE:")
+    ]
+    clean_response = "\n".join(clean_lines).strip()
+
+    # Combine parsed venues with context-based venues
+    all_venues = venues_in_response + parsed_venues
+
+    print(f"  → Response: {clean_response[:80]}...")
+    print(f"  → {elapsed:.2f}s | {tokens.total_tokens} tokens | {len(city_chunks)} sources | {len(all_venues)} venues")
+
+    return {
+        "message": clean_response,
+        "recommendations": [
+            {
+                "name": v.get("name", ""),
+                "lat": v.get("lat", 0),
+                "lng": v.get("lng", 0),
+                "category": v.get("category", "general"),
+                "why": v.get("why", ""),
+            }
+            for v in all_venues
+        ],
+        "sources_used": len(city_chunks),
         "usage": {
             "prompt_tokens": tokens.prompt_tokens,
             "completion_tokens": tokens.completion_tokens,
@@ -831,7 +933,6 @@ def generate_guide(req: GuideRequest):
 
 if __name__ == "__main__":
     import uvicorn
-
     port = int(os.getenv("API_PORT", "3001"))
     print(f"CityScout RAG API → http://localhost:{port}")
     uvicorn.run(app, host="0.0.0.0", port=port)
