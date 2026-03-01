@@ -4,3 +4,5 @@ openai
 pinecone
 python-dotenv
 html2text
+ragas
+langchain-openai

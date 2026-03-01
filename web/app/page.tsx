@@ -191,7 +191,6 @@ export default function Home() {
   const answerEndRef = useRef<HTMLDivElement>(null);
   const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
-  // Poll ingestion status while running
   const pollIngestion = useCallback(() => {
     if (pollRef.current) clearInterval(pollRef.current);
     pollRef.current = setInterval(async () => {
@@ -209,7 +208,6 @@ export default function Home() {
     }, 2000);
   }, []);
 
-  // Check ingestion status on mount
   useEffect(() => {
     fetch(`${API_URL}/api/ingest/status`)
       .then((r) => r.json())
@@ -231,11 +229,7 @@ export default function Home() {
         setIngestStatus(data.state);
         pollIngestion();
       } else {
-        setIngestStatus((prev) => ({
-          ...prev,
-          phase: "error",
-          error: data.error,
-        }));
+        setIngestStatus((prev) => ({ ...prev, phase: "error", error: data.error }));
       }
     } catch (err) {
       setIngestStatus((prev) => ({
@@ -257,17 +251,21 @@ export default function Home() {
       const res = await fetch(`${API_URL}/api/query`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ question: currentQuestion, topK: 5 }),
+        body: JSON.stringify({ question: currentQuestion, top_k: 5 }),
       });
 
       if (!res.ok) {
         const err = await res.json();
-        throw new Error(err.error || "Query failed");
+        throw new Error(err.error || err.detail || "Query failed");
       }
 
       const data = await res.json();
       setResults((prev) => [
-        { question: currentQuestion, answer: data.answer, sources: data.sources },
+        {
+          question: currentQuestion,
+          answer: data.answer,
+          sources: data.sources,
+        },
         ...prev,
       ]);
     } catch (err) {
@@ -289,14 +287,13 @@ export default function Home() {
     askQuestion(question);
   };
 
-  // Auto-scroll when new results come in
   useEffect(() => {
     answerEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [results]);
 
   return (
     <div className="flex min-h-screen flex-col lg:flex-row">
-      {/* ── Sidebar: Test Suite + Ingestion ── */}
+      {/* ── Sidebar ── */}
       <aside className="w-full shrink-0 border-b border-border bg-card/50 p-4 lg:w-80 lg:border-b-0 lg:border-r lg:p-6">
         <div className="mb-6">
           <h1 className="text-xl font-bold tracking-tight">
@@ -337,9 +334,8 @@ export default function Home() {
         </div>
       </aside>
 
-      {/* ── Main content: Query + Results ── */}
+      {/* ── Main content ── */}
       <main className="flex flex-1 flex-col">
-        {/* Query input bar */}
         <div className="sticky top-0 z-10 border-b border-border bg-background/80 p-4 backdrop-blur-md">
           <form onSubmit={handleSubmit} className="mx-auto flex max-w-3xl gap-2">
             <input
@@ -360,7 +356,6 @@ export default function Home() {
           </form>
         </div>
 
-        {/* Results feed */}
         <div className="flex-1 overflow-y-auto p-4">
           <div className="mx-auto max-w-3xl space-y-6">
             <div ref={answerEndRef} />
@@ -451,9 +446,7 @@ function formatMarkdown(md: string): string {
     .replace(/^&gt; (.+)$/gm, "<blockquote>$1</blockquote>")
     .replace(/^- (.+)$/gm, "<li>$1</li>")
     .replace(/^(\d+)\. (.+)$/gm, "<li>$2</li>")
-    .replace(/(<li>.*<\/li>\n?)+/g, (m) =>
-      `<ul>${m}</ul>`
-    )
+    .replace(/(<li>.*<\/li>\n?)+/g, (m) => `<ul>${m}</ul>`)
     .replace(/\n{2,}/g, "</p><p>")
     .replace(/\n/g, "<br/>")
     .replace(/^/, "<p>")
