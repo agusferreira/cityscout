@@ -66,74 +66,44 @@ The core of CityScout is a **dual-corpus RAG** system that retrieves from two se
 
 ```mermaid
 flowchart TD
-    subgraph Input["1️⃣ INPUT"]
-        UP[User Profile<br/>Generated from connected data]
-        CT[Target City<br/>e.g. Barcelona]
-    end
+    UP[/"1️⃣ User Profile<br/>Generated from connected data"/]
+    CT[/"Target City<br/>e.g. Barcelona"/]
 
-    subgraph QueryGen["2️⃣ QUERY GENERATION"]
-        MQ[Main Query<br/>"Recommendations for someone who<br/>loves jazz, specialty coffee,<br/>casual dining in Barcelona"]
-        CQ1[Category Query: Coffee<br/>"Best specialty coffee for<br/>third-wave enthusiast"]
-        CQ2[Category Query: Food<br/>"Casual restaurants, Japanese,<br/>Mexican cuisine"]
-        CQ3[Category Query: Nightlife<br/>"Jazz bars, cocktail bars,<br/>not clubs"]
-        CQ4[Category Query: Culture<br/>"Art galleries, indie bookstores,<br/>local markets"]
-    end
+    MQ["2️⃣ QUERY GENERATION<br/>Main Query + 4 Category Queries<br/>coffee · food · nightlife · culture"]
 
-    subgraph Embedding["3️⃣ EMBEDDING"]
-        E1[/"text-embedding-3-small<br/>1536 dimensions<br/>OpenAI API"/]
-    end
+    E1[/"3️⃣ EMBEDDING<br/>text-embedding-3-small<br/>1536 dimensions · OpenAI API"/]
 
-    subgraph Retrieval["4️⃣ DUAL-CORPUS RETRIEVAL"]
-        subgraph CityCorpus["City Knowledge Corpus"]
-            CC[(Pinecone<br/>filter: city=barcelona)]
-            CC1[Reddit posts from r/Barcelona]
-            CC2[Travel blog articles]
-            CC3[Local tips & guides]
-            CC --> CC1 & CC2 & CC3
-        end
-        subgraph UserCorpus["User Data Corpus"]
-            UC[(Pinecone<br/>namespace: user_{id})]
-            UC1[Spotify: jazz, bossa nova,<br/>indie rock patterns]
-            UC2[Maps: wine bars, ramen joints,<br/>CrossFit gyms frequented]
-            UC3[YouTube: travel vlogs,<br/>food channels watched]
-            UC4[Instagram: aesthetic preferences,<br/>lifestyle signals]
-            UC --> UC1 & UC2 & UC3 & UC4
-        end
-    end
+    CC[("4a. City Corpus<br/>Pinecone filter: city=barcelona<br/>Reddit posts · Blog articles · Local tips")]
+    UC[("4b. User Corpus<br/>Pinecone namespace: user_id<br/>Spotify · Maps · YouTube · Instagram")]
 
-    subgraph Rerank["5️⃣ DEDUPLICATION & RANKING"]
-        DR[Deduplicate by chunk ID<br/>Sort by cosine similarity score<br/>Ensure category diversity]
-    end
+    DR["5️⃣ DEDUP & RANK<br/>Deduplicate by chunk ID<br/>Sort by cosine similarity<br/>Ensure category diversity"]
 
-    subgraph Synthesis["6️⃣ LLM SYNTHESIS"]
-        SY[/"gpt-4o-mini<br/>System: Guide generation prompt<br/>Context: city chunks + user signals<br/>Output: narrative guide with citations"/]
-    end
+    SY[/"6️⃣ LLM SYNTHESIS<br/>gpt-4o-mini<br/>City chunks + User signals<br/>→ Narrative guide with citations"/]
 
-    subgraph Output["7️⃣ OUTPUT"]
-        NG[📖 Narrative Guide<br/>"Your first morning in Barcelona:<br/>walk to Satan's Coffee Corner..."]
-        MP[🗺️ Map Pins<br/>Lat/lng for each venue<br/>Color-coded by category]
-        SC[📎 Source Citations<br/>Reddit post, blog URL,<br/>similarity score]
-        RS[📊 RAGAS Scores<br/>Faithfulness, Precision,<br/>Relevancy]
-    end
+    NG["📖 Narrative Guide"]
+    MP["🗺️ Map Pins<br/>lat · lng · category"]
+    SC["📎 Source Citations"]
+    RS["📊 RAGAS Scores<br/>Faithfulness · Precision · Relevancy"]
 
     UP & CT --> MQ
-    UP --> CQ1 & CQ2 & CQ3 & CQ4
-    MQ & CQ1 & CQ2 & CQ3 & CQ4 --> E1
-    E1 -->|"5 query vectors"| CC
-    E1 -->|"main query vector"| UC
-    CC1 & CC2 & CC3 --> DR
-    UC1 & UC2 & UC3 & UC4 --> DR
-    DR -->|"top-K city chunks<br/>+ top-10 user signals"| SY
+    MQ -->|"5 query vectors"| E1
+    E1 --> CC & UC
+    CC & UC --> DR
+    DR --> SY
     SY --> NG & MP & SC & RS
 
-    style Input fill:#1a1a2e,stroke:#e94560,color:#fff
-    style QueryGen fill:#16213e,stroke:#0f3460,color:#fff
-    style Embedding fill:#533483,stroke:#e94560,color:#fff
-    style CityCorpus fill:#0f3460,stroke:#533483,color:#fff
-    style UserCorpus fill:#0f3460,stroke:#e94560,color:#fff
-    style Rerank fill:#16213e,stroke:#0f3460,color:#fff
-    style Synthesis fill:#533483,stroke:#e94560,color:#fff
-    style Output fill:#1a1a2e,stroke:#e94560,color:#fff
+    style UP fill:#1a1a2e,stroke:#e94560,color:#fff
+    style CT fill:#1a1a2e,stroke:#e94560,color:#fff
+    style MQ fill:#16213e,stroke:#0f3460,color:#fff
+    style E1 fill:#533483,stroke:#e94560,color:#fff
+    style CC fill:#0f3460,stroke:#533483,color:#fff
+    style UC fill:#0f3460,stroke:#e94560,color:#fff
+    style DR fill:#16213e,stroke:#0f3460,color:#fff
+    style SY fill:#533483,stroke:#e94560,color:#fff
+    style NG fill:#1a1a2e,stroke:#e94560,color:#fff
+    style MP fill:#1a1a2e,stroke:#e94560,color:#fff
+    style SC fill:#1a1a2e,stroke:#e94560,color:#fff
+    style RS fill:#1a1a2e,stroke:#e94560,color:#fff
 ```
 
 ## Data Ingestion Pipeline
