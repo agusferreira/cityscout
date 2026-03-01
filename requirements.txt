@@ -1,0 +1,6 @@
+fastapi
+uvicorn[standard]
+openai
+pinecone
+python-dotenv
+html2text
