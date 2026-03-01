@@ -827,3 +827,234 @@ class TestDualCorpusRAG:
         # Enhanced system prompt should mention "TWO sources"
         assert "TWO sources" in system_content or "Digital Platform" in user_content
         print("  → Verified enhanced prompt used for dual-corpus RAG")
+
+
+# ── Test: Chat Endpoint ──
+
+
+class TestChatEndpoint:
+    """Test the /api/chat conversational RAG endpoint."""
+
+    @patch("server.pc")
+    @patch("server.openai_client")
+    def test_chat_basic(self, mock_openai, mock_pc):
+        """Test basic chat endpoint with a simple question."""
+        mock_openai.embeddings.create.return_value = MagicMock(
+            data=[MagicMock(embedding=[0.1] * 1536)]
+        )
+
+        city_match = MagicMock()
+        city_match.id = "ba-coffee-01"
+        city_match.score = 0.90
+        city_match.metadata = {
+            "text": "LAB Tostadores de Café in Chacarita is great for specialty coffee.",
+            "city": "buenos-aires",
+            "category": "coffee",
+            "source_url": "https://reddit.com/r/test",
+            "source_type": "reddit",
+            "date": "2024-11-15",
+            "venues_json": "",
+        }
+
+        mock_index = MagicMock()
+        mock_index.query.return_value = MagicMock(matches=[city_match])
+        mock_pc.Index.return_value = mock_index
+
+        mock_completion = MagicMock()
+        mock_completion.choices = [
+            MagicMock(
+                message=MagicMock(
+                    content="**LAB Tostadores de Café** in Chacarita is perfect for you!\n\nVENUE: LAB Tostadores de Café | coffee | -34.5875 | -58.4545 | Amazing specialty pour-overs in a minimal space"
+                )
+            )
+        ]
+        mock_completion.usage = MagicMock(
+            prompt_tokens=300, completion_tokens=100, total_tokens=400
+        )
+        mock_openai.chat.completions.create.return_value = mock_completion
+
+        from server import app
+        from fastapi.testclient import TestClient
+
+        client = TestClient(app)
+        resp = client.post("/api/chat", json={
+            "message": "Where can I get good coffee?",
+            "city": "buenos-aires",
+            "profile": "A specialty coffee lover.",
+            "history": [],
+        })
+
+        assert resp.status_code == 200
+        data = resp.json()
+        assert "message" in data
+        assert "recommendations" in data
+        assert len(data["message"]) > 0
+        # VENUE lines should be stripped from message
+        assert "VENUE:" not in data["message"]
+        # But parsed into recommendations
+        assert len(data["recommendations"]) >= 1
+        assert data["recommendations"][0]["name"] == "LAB Tostadores de Café"
+        assert data["recommendations"][0]["category"] == "coffee"
+        assert data["recommendations"][0]["lat"] == -34.5875
+        print(f"  → Chat response: {len(data['message'])} chars, {len(data['recommendations'])} recs")
+
+    @patch("server.pc")
+    @patch("server.openai_client")
+    def test_chat_with_history(self, mock_openai, mock_pc):
+        """Test chat endpoint preserves conversation history."""
+        mock_openai.embeddings.create.return_value = MagicMock(
+            data=[MagicMock(embedding=[0.1] * 1536)]
+        )
+
+        mock_index = MagicMock()
+        mock_index.query.return_value = MagicMock(matches=[])
+        mock_pc.Index.return_value = mock_index
+
+        mock_completion = MagicMock()
+        mock_completion.choices = [
+            MagicMock(message=MagicMock(content="Based on our earlier discussion about coffee, let me suggest..."))
+        ]
+        mock_completion.usage = MagicMock(
+            prompt_tokens=500, completion_tokens=80, total_tokens=580
+        )
+        mock_openai.chat.completions.create.return_value = mock_completion
+
+        from server import app
+        from fastapi.testclient import TestClient
+
+        client = TestClient(app)
+        resp = client.post("/api/chat", json={
+            "message": "Tell me more",
+            "city": "barcelona",
+            "profile": "A culture enthusiast.",
+            "history": [
+                {"role": "user", "content": "Where can I get coffee?"},
+                {"role": "assistant", "content": "Try Satan's Coffee Corner!"},
+            ],
+        })
+
+        assert resp.status_code == 200
+        data = resp.json()
+        assert "message" in data
+
+        # Verify conversation history was passed to LLM
+        call_args = mock_openai.chat.completions.create.call_args
+        messages = call_args.kwargs.get("messages") or call_args[1].get("messages")
+        # Should have: system + 2 history messages + 1 current message = 4
+        assert len(messages) >= 4
+
+
+# ── Test: City Data Coordinates ──
+
+
+class TestCityCoordinates:
+    """Test that city data files include realistic coordinates."""
+
+    def test_all_cities_have_coordinates(self):
+        from server import CITIES_DIR
+
+        for fp in CITIES_DIR.glob("*.json"):
+            data = json.loads(fp.read_text())
+            coords_count = 0
+            for item in data:
+                if item.get("coordinates") and item.get("venue_name"):
+                    coords_count += 1
+                    coords = item["coordinates"]
+                    assert "lat" in coords, f"Missing lat in {item.get('id')}"
+                    assert "lng" in coords, f"Missing lng in {item.get('id')}"
+                    assert isinstance(coords["lat"], (int, float))
+                    assert isinstance(coords["lng"], (int, float))
+
+            assert coords_count > 0, f"{fp.stem} has no items with coordinates"
+            print(f"  {fp.stem}: {coords_count}/{len(data)} chunks have coordinates")
+
+    def test_coordinates_realistic_ranges(self):
+        """Test that coordinates are within realistic ranges for each city."""
+        from server import CITIES_DIR
+
+        city_bounds = {
+            "buenos-aires": {"lat": (-34.7, -34.5), "lng": (-58.6, -58.3)},
+            "barcelona": {"lat": (41.3, 41.5), "lng": (2.0, 2.3)},
+            "lisbon": {"lat": (38.6, 38.8), "lng": (-9.3, -9.0)},
+        }
+
+        for fp in CITIES_DIR.glob("*.json"):
+            city_slug = fp.stem
+            if city_slug not in city_bounds:
+                continue
+            bounds = city_bounds[city_slug]
+            data = json.loads(fp.read_text())
+
+            for item in data:
+                coords = item.get("coordinates")
+                if not coords:
+                    continue
+
+                lat, lng = coords["lat"], coords["lng"]
+                lat_range = bounds["lat"]
+                lng_range = bounds["lng"]
+
+                assert lat_range[0] <= lat <= lat_range[1], (
+                    f"{item.get('id')}: lat {lat} out of range {lat_range}"
+                )
+                assert lng_range[0] <= lng <= lng_range[1], (
+                    f"{item.get('id')}: lng {lng} out of range {lng_range}"
+                )
+
+    def test_venue_names_present(self):
+        """Test that chunks with coordinates have venue names."""
+        from server import CITIES_DIR
+
+        for fp in CITIES_DIR.glob("*.json"):
+            data = json.loads(fp.read_text())
+            for item in data:
+                if item.get("coordinates"):
+                    assert item.get("venue_name"), (
+                        f"{item.get('id')} has coordinates but no venue_name"
+                    )
+                    assert len(item["venue_name"]) > 2
+
+
+# ── Test: VENUE Line Parsing ──
+
+
+class TestVenueLineParsing:
+    """Test parsing VENUE: lines from LLM responses."""
+
+    def test_parse_single_venue(self):
+        from server import parse_venue_lines
+
+        text = "Some text\nVENUE: Café Central | coffee | -34.5875 | -58.4124 | Great pour-overs\nMore text"
+        venues = parse_venue_lines(text)
+        assert len(venues) == 1
+        assert venues[0]["name"] == "Café Central"
+        assert venues[0]["category"] == "coffee"
+        assert venues[0]["lat"] == -34.5875
+        assert venues[0]["lng"] == -58.4124
+
+    def test_parse_multiple_venues(self):
+        from server import parse_venue_lines
+
+        text = """Here are my recommendations:
+VENUE: Café A | coffee | 41.3825 | 2.1745 | Amazing espresso
+VENUE: Bar B | nightlife | 41.3800 | 2.1758 | Jazz nightly
+Some more text here."""
+        venues = parse_venue_lines(text)
+        assert len(venues) == 2
+        assert venues[0]["name"] == "Café A"
+        assert venues[1]["category"] == "nightlife"
+
+    def test_parse_no_venues(self):
+        from server import parse_venue_lines
+
+        text = "Just a regular response with no venue lines."
+        venues = parse_venue_lines(text)
+        assert len(venues) == 0
+
+    def test_parse_malformed_venue_ignored(self):
+        from server import parse_venue_lines
+
+        text = "VENUE: incomplete\nVENUE: Good One | food | 38.7107 | -9.1410 | Tasty"
+        venues = parse_venue_lines(text)
+        assert len(venues) == 1
+        assert venues[0]["name"] == "Good One"
